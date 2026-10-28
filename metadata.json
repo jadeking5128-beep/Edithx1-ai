@@ -1,0 +1,6 @@
+{
+  "name": "EDITH X1",
+  "description": "Tactical AI Assistant with Liquid Glass HUD and Multi-Key Failover",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

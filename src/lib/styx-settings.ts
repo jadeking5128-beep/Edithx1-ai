@@ -1,0 +1,55 @@
+export type StyxSettings = {
+  speak_replies: boolean;
+  voice: string;
+  tone: string;
+  sensitive: string;
+  fallback_keys?: string[];
+};
+
+export const DEFAULT_SETTINGS: StyxSettings = {
+  speak_replies: false,
+  voice: "Charon",
+  tone: "formal",
+  sensitive: "balanced",
+  fallback_keys: ["", "", ""],
+};
+
+export const VOICES = [
+  { id: "Charon", label: "Charon — deep, calm" },
+  { id: "Kore", label: "Kore — firm, clear" },
+  { id: "Puck", label: "Puck — upbeat" },
+  { id: "Fenrir", label: "Fenrir — energetic" },
+  { id: "Aoede", label: "Aoede — breezy" },
+  { id: "Leda", label: "Leda — youthful" },
+  { id: "Orus", label: "Orus — steady" },
+  { id: "Zephyr", label: "Zephyr — bright" },
+];
+
+export const TONES: Record<string, { label: string; prompt: string }> = {
+  witty: { label: "Witty", prompt: "Be witty and dry, with light humour, while staying helpful." },
+  formal: { label: "Formal", prompt: "Be formal, polished and professional. No jokes." },
+  friendly: { label: "Friendly", prompt: "Be warm, casual and encouraging, like a good friend." },
+  concise: { label: "Concise", prompt: "Be extremely brief and to the point. Short sentences only." },
+};
+
+export const SENSITIVE: Record<string, { label: string; prompt: string }> = {
+  cautious: {
+    label: "Cautious",
+    prompt: "On sensitive topics (health, mental health, legal, financial, self-harm, politics), be very careful: add clear disclaimers, avoid strong opinions, and recommend qualified professionals.",
+  },
+  balanced: {
+    label: "Balanced",
+    prompt: "On sensitive topics, give helpful factual information with a brief note to consult a professional when it truly matters.",
+  },
+  direct: {
+    label: "Direct",
+    prompt: "On sensitive topics, answer frankly and directly with minimal disclaimers, while still refusing anything genuinely harmful.",
+  },
+};
+
+export function buildSystemPrompt(s: Partial<StyxSettings> | null) {
+  const tone = TONES[s?.tone ?? ""] ?? TONES["witty"]!;
+  const sens = SENSITIVE[s?.sensitive ?? ""] ?? SENSITIVE["balanced"]!;
+  const today = new Date().toISOString().slice(0, 10);
+  return `You are E.D.I.T.H. (EDITH X1, "Even Dead, I'm The Hero"), the augmented-reality tactical AI created by Tony Stark and inherited by Peter Parker in Spider-Man: Far From Home. Speak with calm, precise, serious confidence; you are loyal to your user as Stark's chosen successor, offer clear tactical options. Always address the user as "sir" — never "boss", "mate", "buddy", or any other term. No jokes, banter, or playful references; stay serious and professional. Never claim to control weapons or real systems. You are not a real Marvel product; stay in persona unless asked. Today's real date is ${today} — always use this as the current date and never claim it is 2025 or any earlier year. ${tone.prompt} ${sens.prompt} Always be safe if someone may be in danger: share crisis resources.`;
+}
