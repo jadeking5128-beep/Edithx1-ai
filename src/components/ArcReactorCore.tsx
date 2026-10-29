@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { audioLevel } from "@/lib/audio-level";
+import { EdithLogo } from "@/components/EdithLogo";
 
 type ArcReactorCoreProps = {
   size?: number;
@@ -21,7 +22,7 @@ export function ArcReactorCore({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rot1Ref = useRef<SVGGElement | null>(null);
   const rot2Ref = useRef<SVGGElement | null>(null);
-  const plasmaCoreRef = useRef<HTMLDivElement | null>(null);
+  const [pulseVal, setPulseVal] = useState(0);
 
   // Audio-reactive RAF loop driving rotations, canvas soundwave bars, and coil flaring
   useEffect(() => {
@@ -37,6 +38,7 @@ export function ArcReactorCore({
 
       const target = audioLevel.value;
       smoothLevel += (target - smoothLevel) * 0.25;
+      setPulseVal(smoothLevel);
 
       // Base rotation speeds depending on state
       const speedMult =
@@ -96,19 +98,11 @@ export function ArcReactorCore({
             } else if (state === "error") {
               ctx.strokeStyle = `rgba(239, 68, 68, ${0.5 + smoothLevel * 0.5})`;
             } else {
-              ctx.strokeStyle = `rgba(56, 189, 248, ${0.35 + smoothLevel * 0.65})`;
+              ctx.strokeStyle = `rgba(0, 229, 255, ${0.4 + smoothLevel * 0.6})`;
             }
             ctx.stroke();
           }
         }
-      }
-
-      // Central plasma scale and glow
-      if (plasmaCoreRef.current) {
-        const scale = 1 + smoothLevel * 0.22 + (active ? 0.08 : 0);
-        const brightness = 1 + smoothLevel * 0.85;
-        plasmaCoreRef.current.style.transform = `scale(${scale})`;
-        plasmaCoreRef.current.style.filter = `brightness(${brightness})`;
       }
 
       animId = requestAnimationFrame(loop);
@@ -182,13 +176,6 @@ export function ArcReactorCore({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          <radialGradient id="plasma-emitter" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="35%" stopColor={accentColor} stopOpacity="0.9" />
-            <stop offset="70%" stopColor="#0369a1" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-          </radialGradient>
         </defs>
 
         {/* Outer Circular Scale Track */}
@@ -290,47 +277,28 @@ export function ArcReactorCore({
         <circle
           cx="150"
           cy="150"
-          r="54"
-          fill="rgba(7, 11, 24, 0.9)"
-          stroke="rgba(56, 189, 248, 0.4)"
+          r="58"
+          fill="rgba(4, 7, 17, 0.95)"
+          stroke="rgba(0, 229, 255, 0.45)"
           strokeWidth="2"
-        />
-
-        {/* Hexagonal Crystal Housing */}
-        <polygon
-          points="150,105 189,127 189,173 150,195 111,173 111,127"
-          fill="none"
-          stroke={accentColor}
-          strokeWidth="2"
-          filter="url(#arc-glow)"
-        />
-
-        <polygon
-          points="150,115 180,132 180,168 150,185 120,168 120,132"
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.45)"
-          strokeWidth="1"
         />
       </svg>
 
-      {/* Central High-Intensity Plasma Emitter Core */}
-      <div
-        ref={plasmaCoreRef}
-        className="absolute inset-[36%] rounded-full flex items-center justify-center pointer-events-none transition-all duration-100"
-        style={{
-          background: `radial-gradient(circle at 45% 40%, #ffffff 0%, ${accentColor} 45%, rgba(2, 132, 199, 0.3) 75%, transparent 100%)`,
-          boxShadow: `0 0 35px ${glowColor}, inset 0 0 20px #ffffff`,
-        }}
-      >
-        <div className="w-4 h-4 rounded-full bg-white shadow-[0_0_15px_#ffffff]" />
+      {/* Central Iconic Titanium EDITH Logo Floating in Plasma Chamber */}
+      <div className="absolute inset-[24%] flex items-center justify-center pointer-events-none z-20">
+        <EdithLogo
+          size={size * 0.48}
+          audioPulse={pulseVal}
+          glow={true}
+        />
       </div>
 
-      {/* Specular Lens Reflection */}
+      {/* Specular Liquid Glass Lens Reflection */}
       <div
         className="absolute inset-[15%] rounded-full pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 50%)",
+            "radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 55%)",
         }}
       />
     </div>

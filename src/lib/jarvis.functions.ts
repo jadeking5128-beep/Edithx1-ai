@@ -43,7 +43,7 @@ function summarizeSteps(steps: NetworkTaskStep[]): string {
 import { getKeyPoolStatus } from "@/lib/ai.server";
 
 export const getApiKeysStatus = createServerFn({ method: "POST" })
-  .inputValidator((d: { fallbackKeys?: string[] }) => ({
+  .validator((d: { fallbackKeys?: string[] }) => ({
     fallbackKeys: Array.isArray(d?.fallbackKeys) ? d.fallbackKeys.filter((k): k is string => typeof k === "string") : [],
   }))
   .handler(async ({ data }) => {
@@ -51,8 +51,7 @@ export const getApiKeysStatus = createServerFn({ method: "POST" })
   });
 
 export const askJarvis = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: { messages: Msg[]; fallbackKeys?: string[] }) => {
+  .validator((d: { messages: Msg[]; fallbackKeys?: string[] }) => {
     if (!Array.isArray(d?.messages)) throw new Error("Invalid input");
     const fallbackKeys = Array.isArray(d.fallbackKeys) ? d.fallbackKeys.filter((k): k is string => typeof k === "string") : [];
     return {
@@ -60,19 +59,11 @@ export const askJarvis = createServerFn({ method: "POST" })
       fallbackKeys,
     };
   })
-  .handler(async ({ data, context }) => {
-    let settings: any = null;
-    try {
-      const res = await context.supabase.from("user_settings").select("tone, sensitive").maybeSingle();
-      settings = res.data;
-    } catch {
-      // Guest or table missing, use default
-    }
-
+  .handler(async ({ data }) => {
     let out: string;
     try {
       out = await callChat(
-        buildSystemPrompt(settings) + "\nThis is primarily a spoken voice conversation: answer in 1-3 short, natural sentences with no markdown, lists, or emojis unless the user asks for detail." + NETWORK_PROMPT,
+        buildSystemPrompt(null) + "\nThis is primarily a spoken voice conversation: answer in 1-3 short, natural sentences with no markdown, lists, or emojis unless the user asks for detail." + NETWORK_PROMPT,
         data.messages,
         data.fallbackKeys,
       );
@@ -81,10 +72,10 @@ export const askJarvis = createServerFn({ method: "POST" })
       if (msg === "RATE_LIMITED") return { reply: "All configured Gemini systems are temporarily rate-limited, sir. Please wait a moment." };
       if (msg === "CREDITS_DEPLETED") return { reply: "AI credits are depleted on all fallback keys, sir. Please add an active Gemini API key in settings." };
       if (msg === "BAD_API_KEY") return { reply: "The provided Gemini API keys appear invalid, sir. Please verify them in settings." };
-      return { reply: `I encountered a problem, sir: ${msg || "Please try again."}` };
+      return { reply: `I encountered an issue, sir: ${msg || "Please try again."}` };
     }
 
-    // Execute a EDITH NETWORK directive if the AI emitted one.
+    // Execute an EDITH NETWORK directive if the AI emitted one.
     const match = out.match(CMD_RE);
     let network: NetworkPayload | undefined;
     let reply = out;

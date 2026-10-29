@@ -31,6 +31,7 @@ import { audioLevel } from "@/lib/audio-level";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { DiagnosticPanel } from "@/components/DiagnosticPanel";
 import { ArcReactorCore } from "@/components/ArcReactorCore";
+import { EdithLogo } from "@/components/EdithLogo";
 import { DEFAULT_SETTINGS, type StyxSettings } from "@/lib/styx-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -309,9 +310,44 @@ export function Index() {
         { Authorization: `Bearer ${token}` },
         ac.signal,
       );
-    } catch (e) {
-      if (!ac.signal.aborted) setVoiceError("Audio synthesis error.");
-      console.error(e);
+    } catch {
+      // High-fidelity client-side voice fallback when satellite audio beam is offline
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.05;
+        u.pitch = 0.95;
+
+        // Try to pick a natural English voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const engVoice = voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Siri") || v.name.includes("Daniel")));
+        if (engVoice) u.voice = engVoice;
+
+        let pulseTimer = 0;
+        u.onstart = () => {
+          setPhase("speaking");
+          pulseTimer = window.setInterval(() => {
+            audioLevel.value = 0.45 + Math.random() * 0.45;
+            audioLevel.source = "ai";
+          }, 80);
+        };
+
+        u.onend = u.onerror = () => {
+          clearInterval(pulseTimer);
+          audioLevel.value = 0;
+          audioLevel.source = "idle";
+          if (convoRef.current) {
+            setPhase("listening");
+            void listen();
+          } else {
+            setPhase("idle");
+          }
+        };
+
+        window.speechSynthesis.speak(u);
+      } else {
+        if (!ac.signal.aborted) setVoiceError("Audio synthesis error.");
+      }
     }
   }
 
@@ -568,7 +604,7 @@ export function Index() {
   if (!ready) {
     return (
       <main className="stealth-carbon-bg flex min-h-screen items-center justify-center">
-        <ArcReactorCore size={200} active />
+        <EdithLogo size={140} glow audioPulse={0.5} />
       </main>
     );
   }
@@ -576,19 +612,19 @@ export function Index() {
   if (!session && !isGuest) {
     return (
       <main className="stealth-carbon-bg flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <div className="carbon-hud-card max-w-md w-full p-8 rounded-2xl flex flex-col items-center shadow-2xl border border-sky-400/30">
+        <div className="ios-liquid-card max-w-md w-full p-8 flex flex-col items-center shadow-2xl">
           <div className="mb-6">
-            <ArcReactorCore size={200} />
+            <EdithLogo size={140} glow audioPulse={0.3} />
           </div>
 
-          <h1 className="jarvis-title text-3xl sm:text-4xl tracking-widest text-primary drop-shadow-[0_0_20px_rgba(0,229,255,0.6)]">
+          <h1 className="jarvis-title text-3xl sm:text-4xl tracking-widest text-primary drop-shadow-[0_0_20px_rgba(0,229,255,0.7)]">
             E.D.I.T.H. X1
           </h1>
           <p className="mt-2 text-xs tracking-[0.25em] text-cyan-300 font-semibold font-mono">
-            STARK SEC-9 // TACTICAL OPERATING CONSOLE
+            STARK SEC-9 // IOS 27 LIQUID GLASS HUD
           </p>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 max-w-xs font-mono">
-            Gemini 2.0 Flash sub-second engine with 4-key automated failover cascade.
+            Gemini 3.5 Flash neural engine with 4-key automated failover cascade.
           </p>
 
           <div className="mt-4 flex items-center gap-2 rounded-full border border-sky-400/40 bg-sky-950/40 px-3 py-1 text-[11px] text-cyan-300 font-mono">
@@ -597,12 +633,12 @@ export function Index() {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 w-full">
-            <button onClick={startGuestMode} className="liquid-glass-btn w-full py-3 text-xs tracking-widest flex items-center justify-center gap-2">
+            <button onClick={startGuestMode} className="ios-liquid-btn w-full py-3.5 text-xs tracking-widest flex items-center justify-center gap-2">
               <Sparkles className="h-4 w-4" /> INITIALIZE TACTICAL INTERFACE
             </button>
             <button
               onClick={signIn}
-              className="rounded-xl border border-primary/30 bg-black/50 py-2.5 text-xs tracking-wider text-muted-foreground transition hover:border-primary hover:text-foreground font-mono"
+              className="ios-liquid-pill py-2.5 text-xs tracking-wider text-muted-foreground hover:text-foreground font-mono"
             >
               Authenticate via Google Cloud
             </button>
@@ -637,18 +673,16 @@ export function Index() {
         />
       )}
 
-      {/* Top Stealth Tactical Nav Bar */}
-      <header className="liquid-navbar z-20 flex items-center gap-3 px-5 py-3 border-b border-sky-400/25 bg-black/60 backdrop-blur-2xl">
+      {/* Top iOS 27 Liquid Glass Nav Dock */}
+      <header className="ios-liquid-dock z-20 flex items-center gap-3 px-5 py-3">
         <div className="flex items-center gap-3">
-          <ArcReactorCore
-            size={38}
-            active={loading}
-            state={phase}
-            ambient={ambientActive && phase === "idle"}
-          />
+          <EdithLogo size={38} audioPulse={loading ? 0.9 : ambientActive ? 0.6 : 0.15} />
           <div>
-            <div className="jarvis-title text-sm sm:text-base font-bold tracking-widest text-primary drop-shadow-[0_0_12px_rgba(0,229,255,0.6)]">
-              E.D.I.T.H. X1
+            <div className="jarvis-title text-sm sm:text-base font-bold tracking-widest text-primary drop-shadow-[0_0_12px_rgba(0,229,255,0.7)] flex items-center gap-2">
+              <span>E.D.I.T.H. X1</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full border border-sky-400/40 bg-sky-950/40 text-cyan-300">
+                GEMINI 3.5
+              </span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] tracking-wider text-muted-foreground font-mono">
               <span
@@ -673,7 +707,7 @@ export function Index() {
 
         {/* Fallback Keys Health Badge */}
         <div className="hidden md:flex items-center gap-1.5 ml-4">
-          <div className="liquid-badge text-[10px] font-mono border-sky-400/40 bg-sky-950/30">
+          <div className="ios-liquid-pill px-3 py-1 text-[10px] font-mono flex items-center gap-1.5">
             <KeyRound className="h-3 w-3 text-primary" />
             <span>{totalKeys} KEYS CASCADE READY</span>
           </div>
@@ -683,7 +717,7 @@ export function Index() {
           {/* Diagnostics Button */}
           <button
             onClick={() => setShowDiagnostics(true)}
-            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
+            className="ios-liquid-pill flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono"
             title="Telemetry & Connection Diagnostics"
           >
             <Activity className="h-3.5 w-3.5 text-primary animate-pulse" />
@@ -693,13 +727,13 @@ export function Index() {
           {/* Network Pill */}
           <button
             onClick={() => setShowNet(!showNet)}
-            className="liquid-glass-pill hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
+            className="ios-liquid-pill hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono"
             aria-label="EDITH NETWORK status"
           >
             <span
               className={`inline-block h-2 w-2 rounded-full ${
                 net.status === "connected"
-                  ? "bg-green-400"
+                  ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"
                   : net.status === "connecting"
                   ? "animate-pulse bg-yellow-400"
                   : "bg-red-500"
@@ -709,15 +743,15 @@ export function Index() {
           </button>
 
           {/* Tactical Mode Switcher Pill */}
-          <div className="liquid-glass-pill flex items-center p-0.5 border-sky-400/30">
+          <div className="ios-liquid-pill flex items-center p-0.5">
             <button
               onClick={() => {
                 if (mode === "voice") stopConvo();
                 setMode("voice");
               }}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
+              className={`flex items-center gap-1 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
                 mode === "voice"
-                  ? "bg-primary text-black shadow-[0_0_12px_rgba(0,229,255,0.7)]"
+                  ? "bg-primary text-black shadow-[0_0_15px_rgba(0,229,255,0.8)]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -728,9 +762,9 @@ export function Index() {
                 if (mode === "voice") stopConvo();
                 setMode("text");
               }}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
+              className={`flex items-center gap-1 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
                 mode === "text"
-                  ? "bg-primary text-black shadow-[0_0_12px_rgba(0,229,255,0.7)]"
+                  ? "bg-primary text-black shadow-[0_0_15px_rgba(0,229,255,0.8)]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -741,7 +775,7 @@ export function Index() {
           {/* Settings Button */}
           <button
             onClick={() => setShowSettings(true)}
-            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
+            className="ios-liquid-pill flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono"
           >
             <Sliders className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">SETTINGS</span>
@@ -751,7 +785,7 @@ export function Index() {
             <button
               onClick={clearChat}
               title="Clear transcript"
-              className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive transition border-sky-400/30"
+              className="ios-liquid-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive transition"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -764,7 +798,7 @@ export function Index() {
               setIsGuest(false);
             }}
             title="Sign out / Exit"
-            className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition border-sky-400/30"
+            className="ios-liquid-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
@@ -773,7 +807,7 @@ export function Index() {
 
       {/* Network Diagnostics Dropdown */}
       {showNet && (
-        <div className="carbon-hud-card border-b border-primary/30 px-5 py-3 text-xs backdrop-blur-2xl z-10 animate-fade-in font-mono">
+        <div className="ios-liquid-card mx-4 my-2 px-5 py-3 text-xs backdrop-blur-2xl z-10 animate-fade-in font-mono">
           <div className="mx-auto flex max-w-3xl flex-col gap-2">
             <div className="tracking-widest text-primary flex items-center justify-between">
               <span>EDITH NETWORK PROTOCOL — {net.status.toUpperCase()}</span>
@@ -796,11 +830,11 @@ export function Index() {
       {/* MAIN VIEWPORT: VOICE OR TEXT */}
       {mode === "voice" ? (
         <section className="flex flex-1 flex-col items-center justify-between overflow-hidden px-6 py-6 text-center relative">
-          {/* Top Tactical HUD Telemetry Cards */}
+          {/* Top iOS Liquid Glass Telemetry Cards */}
           <div className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
             <div
               onClick={() => setShowDiagnostics(true)}
-              className="carbon-hud-card rounded-xl p-3 text-left cursor-pointer hover:border-primary/60 transition"
+              className="ios-liquid-card p-3.5 text-left cursor-pointer hover:border-primary/60 transition"
             >
               <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
                 NEURAL POOL // CASCADE
@@ -811,7 +845,7 @@ export function Index() {
               </div>
             </div>
 
-            <div className="carbon-hud-card rounded-xl p-3 text-left">
+            <div className="ios-liquid-card p-3.5 text-left">
               <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
                 ARC REACTOR STATUS
               </span>
@@ -828,7 +862,7 @@ export function Index() {
               </div>
             </div>
 
-            <div className="carbon-hud-card rounded-xl p-3 text-left hidden sm:block">
+            <div className="ios-liquid-card p-3.5 text-left hidden sm:block">
               <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
                 MIC GATE SENSITIVITY
               </span>
@@ -839,10 +873,10 @@ export function Index() {
             </div>
           </div>
 
-          {/* Central Holographic Arc Reactor Assembly */}
+          {/* Central Holographic Arc Reactor Assembly with Embedded Logo */}
           <div className="my-auto flex flex-col items-center justify-center gap-6">
             <ArcReactorCore
-              size={290}
+              size={300}
               reactive
               active={phase === "thinking" || phase === "speaking"}
               ambient={ambientActive && phase === "idle"}
@@ -851,24 +885,24 @@ export function Index() {
             />
 
             {ambientActive && phase === "idle" && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-400/40 bg-sky-950/40 text-[10px] text-cyan-300 font-mono tracking-widest shadow-[0_0_15px_rgba(0,229,255,0.3)]">
+              <div className="ios-liquid-pill flex items-center gap-1.5 px-4 py-1 text-[10px] text-cyan-300 font-mono tracking-widest shadow-[0_0_20px_rgba(0,229,255,0.4)]">
                 <Radio className="h-3 w-3 text-cyan-400 animate-pulse" />
                 <span>AMBIENT SONAR: ROOM ACTIVITY DETECTED</span>
               </div>
             )}
 
-            <div className="liquid-glass-pill px-6 py-2 text-xs tracking-[0.3em] font-semibold text-primary shadow-[0_0_20px_rgba(0,229,255,0.4)] font-mono border-sky-400/40">
+            <div className="ios-liquid-pill px-6 py-2.5 text-xs tracking-[0.3em] font-semibold text-primary shadow-[0_0_25px_rgba(0,229,255,0.45)] font-mono">
               {phase === "listening"
                 ? "● INGESTING COMMAND... SPEAK FREELY"
                 : phase === "thinking"
-                ? "◆ GEMINI 2.0 FLASH COMPUTING..."
+                ? "◆ GEMINI 3.5 FLASH COMPUTING..."
                 : phase === "speaking"
                 ? "▲ VOCAL TRANSMISSION IN PROGRESS"
                 : "TAP THE ARC REACTOR TO ACTIVATE"}
             </div>
 
             {messages.length > 0 && (
-              <div className="carbon-hud-card max-w-lg rounded-xl px-5 py-3 text-xs leading-relaxed text-muted-foreground border-primary/30 backdrop-blur-xl">
+              <div className="ios-liquid-card max-w-lg px-5 py-3.5 text-xs leading-relaxed text-muted-foreground">
                 <span className="text-[10px] tracking-widest text-primary block mb-1 font-mono font-bold">
                   LAST TACTICAL TRANSMISSION
                 </span>
@@ -882,7 +916,7 @@ export function Index() {
               {phase === "listening" && (
                 <button
                   onClick={() => void finishTurn()}
-                  className="liquid-glass-btn px-4 py-2 text-xs font-mono"
+                  className="ios-liquid-btn px-5 py-2.5 text-xs font-mono"
                 >
                   TRANSCRIBE DIRECTIVE
                 </button>
@@ -890,7 +924,7 @@ export function Index() {
               {convo && (
                 <button
                   onClick={stopConvo}
-                  className="liquid-glass-btn border-rose-500/50 text-rose-400 hover:bg-rose-500/20 px-4 py-2 text-xs flex items-center gap-1.5 font-mono"
+                  className="ios-liquid-btn border-rose-500/50 text-rose-400 hover:bg-rose-500/20 px-5 py-2.5 text-xs flex items-center gap-1.5 font-mono"
                   aria-label="End conversation"
                 >
                   <Square className="h-3.5 w-3.5 fill-current" /> DISENGAGE
@@ -899,7 +933,7 @@ export function Index() {
             </div>
 
             {voiceError && (
-              <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive font-mono">
+              <div className="flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/15 px-4 py-2 text-xs text-destructive font-mono">
                 <ShieldAlert className="h-4 w-4" /> {voiceError}
               </div>
             )}
@@ -917,13 +951,13 @@ export function Index() {
               {messages.length === 0 && (
                 <div className="animate-fade-in mt-12 flex flex-col items-center text-center">
                   <div className="mb-4">
-                    <ArcReactorCore size={160} state="idle" ambient={ambientActive} />
+                    <EdithLogo size={150} glow audioPulse={0.3} />
                   </div>
                   <h3 className="text-base font-semibold tracking-wider text-primary font-mono">
                     E.D.I.T.H. X1 // TACTICAL STANDBY
                   </h3>
                   <p className="mt-2 text-xs text-muted-foreground max-w-sm font-mono leading-relaxed">
-                    Good day, sir. Gemini 2.0 Flash neural subsystems and {totalKeys} API keys are online. How may I assist you today?
+                    Good day, sir. Gemini 3.5 Flash neural subsystems and {totalKeys} API keys are online. How may I assist you today?
                   </p>
                 </div>
               )}
@@ -963,7 +997,7 @@ export function Index() {
                 <div className="liquid-msg-ai self-start p-4">
                   <div className="flex items-center gap-2 text-xs text-cyan-300 font-mono">
                     <Zap className="h-3.5 w-3.5 animate-bounce" />
-                    <span>Gemini 2.0 Flash synthesizing response...</span>
+                    <span>Gemini 3.5 Flash synthesizing response...</span>
                   </div>
                 </div>
               )}
@@ -971,17 +1005,17 @@ export function Index() {
             </div>
           </section>
 
-          {/* Floating Tactical Console Input Bar */}
-          <form onSubmit={send} className="carbon-hud-card border-t border-sky-400/30 p-4 z-10 bg-black/70 backdrop-blur-2xl">
+          {/* Floating iOS Liquid Glass Input Dock */}
+          <form onSubmit={send} className="ios-liquid-dock p-4 z-10">
             <div className="mx-auto flex max-w-3xl items-center gap-2">
               <button
                 type="button"
                 onClick={toggleMic}
                 disabled={loading || transcribing}
                 aria-label={recording ? "Stop recording" : "Speak"}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all ${
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all ${
                   recording
-                    ? "border-rose-500 bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.7)] animate-pulse"
+                    ? "border-rose-500 bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.8)] animate-pulse"
                     : "border-primary/40 bg-primary/10 text-primary hover:border-primary hover:bg-primary/20"
                 }`}
               >
@@ -997,13 +1031,13 @@ export function Index() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={recording ? "Acoustic ingestion active... speak directive" : "Transmit tactical directive..."}
-                className="liquid-glass-input min-w-0 flex-1 px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none font-mono"
+                placeholder={recording ? "Acoustic ingestion active... speak directive" : "Transmit tactical directive to E.D.I.T.H..."}
+                className="ios-liquid-input min-w-0 flex-1 px-5 py-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none font-mono"
               />
 
               <button
                 disabled={loading || !input.trim()}
-                className="liquid-glass-btn flex h-10 items-center justify-center gap-1.5 px-4 text-xs disabled:opacity-40 font-mono"
+                className="ios-liquid-btn flex h-11 items-center justify-center gap-1.5 px-5 text-xs disabled:opacity-40 font-mono"
               >
                 <span>TRANSMIT</span>
                 <SendHorizontal className="h-3.5 w-3.5" />
