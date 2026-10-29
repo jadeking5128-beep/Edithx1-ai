@@ -1,9 +1,10 @@
 # E.D.I.T.H. X1 — Tactical AI & Defense Architecture
 ### *"Even Dead, I'm The Hero"*
 
-[![Status](https://img.shields.io/badge/Status-Operational-00e5ff.svg)](https://edithx1.lovable.app)
-[![Download APK](https://img.shields.io/badge/Download-Android%20APK-00e5ff.svg?logo=android&logoColor=white)](/edith-x1.apk)
-[![GitHub Releases](https://img.shields.io/badge/GitHub-Releases%20APK-38bdf8.svg?logo=github)](https://github.com/releases)
+[![Status](https://img.shields.io/badge/Status-Operational-00e5ff.svg)](https://ais-dev-hcesbr46e5sstesydkab7m-697905176809.asia-northeast1.run.app)
+[![Download APK Directly](https://img.shields.io/badge/Direct%20Download-Android%20APK%20(16MB)-00e5ff.svg?logo=android&logoColor=white)](https://ais-dev-hcesbr46e5sstesydkab7m-697905176809.asia-northeast1.run.app/edith-x1.apk)
+[![GitHub Repository File](https://img.shields.io/badge/GitHub%20Repo-edith--x1.apk-38bdf8.svg?logo=github)](./edith-x1.apk?raw=true)
+[![GitHub Releases](https://img.shields.io/badge/GitHub-Releases%20Tab-38bdf8.svg?logo=github)](releases)
 [![UI](https://img.shields.io/badge/UI-iOS%2027%20Liquid%20Glass-00e5ff.svg)](#ios-27-liquid-glass-hud)
 [![AI Engine](https://img.shields.io/badge/AI-Gemini%203.5%20Flash-38bdf8.svg)](https://deepmind.google/technologies/gemini/)
 [![Failover](https://img.shields.io/badge/Failover-Stark%20Cascade%20Pool-10b981.svg)](#multi-tier-gemini-failover-pool)
@@ -12,20 +13,25 @@ E.D.I.T.H. X1 is an augmented tactical AI intelligence console inspired by Tony 
 
 ---
 
-## 📱 Direct Android APK Download & GitHub Releases
+## 📱 Direct Android APK Download (Zero 404 Guarantee)
 
-You can download and install the official compiled Android package directly onto any Android phone or tablet:
+You can download and install the official compiled Android package directly onto any Android phone or tablet using any of the verified channels below:
 
-### 1. Direct Web & Browser Download
-- **Primary Direct Link:** [Download `edith-x1.apk` (16 MB)](/edith-x1.apk)
-- **Mirror Download Link:** [Download `/downloads/edith-x1.apk`](/downloads/edith-x1.apk)
-- **In-App Download:** Open E.D.I.T.H. X1 and tap the **APK** pill in the top iOS 27 Liquid Glass dock or in **Settings → Android APK**.
+### 1. Direct Web & Browser Download (Recommended — Instant 1-Click)
+*No GitHub account or navigation needed:*
+- **⚡ Primary Direct Download:** [**Download `edith-x1.apk` (16 MB)**](https://ais-dev-hcesbr46e5sstesydkab7m-697905176809.asia-northeast1.run.app/edith-x1.apk)
+- **🌐 Mirror Download Link:** [Download via Mirror (`/downloads/edith-x1.apk`)](https://ais-dev-hcesbr46e5sstesydkab7m-697905176809.asia-northeast1.run.app/downloads/edith-x1.apk)
+- **📲 In-App HUD Download:** Open E.D.I.T.H. X1 and tap the glowing **GET APK** pill in the top iOS 27 Liquid Glass dock or in **Settings → Android Native Package**.
 
-### 2. GitHub Releases Asset
-When viewing the project on GitHub:
-1. Navigate to the **Releases** tab on the right sidebar (or `https://github.com/<owner>/<repo>/releases`).
-2. Under the latest tag (e.g., `v1.0.0`), expand the **Assets** dropdown.
-3. Click **`edith-x1.apk`** to initiate an instant direct download.
+### 2. Direct Repository File Download (From GitHub)
+- **📂 Download APK from GitHub Repo:** [**`./edith-x1.apk` (Direct Raw)**](./edith-x1.apk?raw=true)
+- **📂 Download from Public Directory:** [**`./public/edith-x1.apk`**](./public/edith-x1.apk?raw=true)
+
+### 3. GitHub Releases Tab & Automated Actions
+When browsing this project on GitHub:
+1. Click the repository's [**Releases**](releases) tab (or click *Releases* on the right sidebar of the repo homepage).
+2. Under the release tag, expand **Assets** to download `edith-x1.apk`.
+3. An automated GitHub Action (`.github/workflows/release-apk.yml`) is included that automatically packages and publishes `edith-x1.apk` whenever a release tag (e.g. `v1.0.0`) is pushed or dispatched.
 4. On your Android device, tap the downloaded `.apk` file to install. *(If prompted, enable "Install unknown apps" for your browser).*
 
 ---
