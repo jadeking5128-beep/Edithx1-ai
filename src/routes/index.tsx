@@ -17,6 +17,7 @@ import {
   Volume2,
   Activity,
   Radio,
+  Zap,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +30,7 @@ import { streamSpeech, unlockAudio } from "@/lib/stream-speech";
 import { audioLevel } from "@/lib/audio-level";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { DiagnosticPanel } from "@/components/DiagnosticPanel";
+import { ArcReactorCore } from "@/components/ArcReactorCore";
 import { DEFAULT_SETTINGS, type StyxSettings } from "@/lib/styx-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -41,15 +43,15 @@ export const Route = createFileRoute("/")({
       const { unlocked } = await isUnlocked();
       if (!unlocked) throw redirect({ to: "/unlock" });
     } catch {
-      // If gate check fails or throws, allow graceful access
+      // Graceful fallback for open access
     }
   },
   head: () => ({
     meta: [
-      { title: "EDITH X1 — Even Dead, I'm The Hero" },
-      { name: "description", content: "Talk to E.D.I.T.H., your personal AI assistant." },
-      { property: "og:title", content: "E.D.I.T.H. AI Assistant" },
-      { property: "og:description", content: "Talk to E.D.I.T.H., your personal AI assistant." },
+      { title: "EDITH X1 — Tactical Defense & Intelligence" },
+      { name: "description", content: "Augmented-Reality Tactical Assistant // E.D.I.T.H. X1" },
+      { property: "og:title", content: "E.D.I.T.H. Tactical AI" },
+      { property: "og:description", content: "Augmented-Reality Tactical Assistant // E.D.I.T.H. X1" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -59,100 +61,12 @@ export const Route = createFileRoute("/")({
 
 type Msg = { role: "user" | "assistant"; content: string; network?: NetworkPayload | undefined };
 
-function LiquidCore({
-  size = 220,
-  active = false,
-  reactive = false,
-  ambient = false,
-}: {
-  size?: number;
-  active?: boolean;
-  reactive?: boolean;
-  ambient?: boolean;
-}) {
-  const r1 = useRef<HTMLDivElement>(null);
-  const r2 = useRef<HTMLDivElement>(null);
-  const r3 = useRef<HTMLDivElement>(null);
-  const orb = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!reactive) return;
-    let raf = 0,
-      a = 0,
-      smooth = 0,
-      last = performance.now();
-
-    const loop = (t: number) => {
-      const dt = Math.min(64, t - last);
-      last = t;
-      smooth += (audioLevel.value - smooth) * 0.22;
-      const speed = 0.025 + smooth * 1.1 + (active ? 0.09 : 0) + (ambient ? 0.04 : 0);
-      a += speed * dt;
-
-      if (r1.current) r1.current.style.transform = `rotate(${a * 0.4}deg)`;
-      if (r2.current) r2.current.style.transform = `rotate(${-a * 0.8}deg) scale(${1 + smooth * 0.08 + (ambient ? 0.03 : 0)})`;
-      if (r3.current) r3.current.style.transform = `rotate(${a * 1.4}deg) scale(${1 + smooth * 0.12 + (ambient ? 0.05 : 0)})`;
-      if (orb.current) {
-        orb.current.style.transform = `scale(${1 + smooth * 0.45 + (ambient ? 0.08 : 0)})`;
-        orb.current.style.filter = `brightness(${1 + smooth * 0.9 + (ambient ? 0.35 : 0)})`;
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [reactive, active, ambient]);
-
-  return (
-    <div
-      className={`liquid-core-container ${ambient ? "ambient-active" : ""}`}
-      style={{ width: size, height: size }}
-    >
-      <div className="liquid-core-specular" />
-      {/* Outer fluid glass dashed track */}
-      <div
-        ref={r1}
-        className={`absolute inset-0 rounded-full border-2 border-dashed border-sky-400/40 ${
-          reactive ? "" : "animate-spin-slow"
-        }`}
-      />
-      {/* Middle cyan iridescent ring */}
-      <div
-        ref={r2}
-        className={`absolute inset-[8%] rounded-full border-[3px] border-transparent border-t-cyan-400 border-r-sky-400/60 glow-ring ${
-          reactive ? "" : "animate-spin-rev"
-        }`}
-      />
-      {/* Inner fast counter ring */}
-      <div
-        ref={r3}
-        className={`absolute inset-[18%] rounded-full border-[3px] border-transparent border-l-cyan-300 border-b-cyan-500 glow-ring ${
-          reactive ? "" : "animate-spin-mid"
-        }`}
-      />
-      {/* Liquid haze caustics */}
-      <div className="core-haze absolute inset-[16%] rounded-full opacity-80" />
-      {/* Concentric liquid ripples */}
-      <div className="core-ripple" />
-      <div className="core-ripple core-ripple-2" />
-      {/* Central Liquid Glass Energy Orb */}
-      <div className="absolute inset-[35%] flex items-center justify-center">
-        <div
-          ref={orb}
-          className={`h-full w-full rounded-full liquid-orb-glow ${
-            reactive ? "" : active ? "animate-pulse-fast" : "animate-pulse-slow"
-          }`}
-        />
-      </div>
-    </div>
-  );
-}
-
 const LOCAL_STORAGE_SETTINGS_KEY = "edith_user_settings_v2";
 const LOCAL_STORAGE_CHAT_KEY = "edith_guest_messages_v2";
 
 export function Index() {
   const [session, setSession] = useState<Session | null>(null);
-  const [isGuest, setIsGuest] = useState(true); // Default to guest for immediate visibility
+  const [isGuest, setIsGuest] = useState(true);
   const [ready, setReady] = useState(false);
   const [authError, setAuthError] = useState("");
   const [messages, setMessagesState] = useState<Msg[]>([]);
@@ -289,7 +203,7 @@ export function Index() {
           },
         };
       } catch {
-        // Passive microphone access deferred or not granted
+        // Microphone access deferred or blocked
       }
     };
 
@@ -333,7 +247,7 @@ export function Index() {
         if (r.error) setVoiceError(r.error);
         emptyStreak.current += 1;
         if (emptyStreak.current >= 3) {
-          setVoiceError("I didn't hear anything, sir. Tap the core to resume.");
+          setVoiceError("I didn't hear anything, sir. Tap the Arc Reactor to resume.");
           return void stopConvo();
         }
         return void listen();
@@ -345,7 +259,7 @@ export function Index() {
         await speak(reply);
       }
     } catch (e) {
-      setVoiceError(e instanceof Error ? e.message : "Recording failed.");
+      setVoiceError(e instanceof Error ? e.message : "Voice processing error.");
     }
     if (convoRef.current) void listen();
   }
@@ -396,7 +310,7 @@ export function Index() {
         ac.signal,
       );
     } catch (e) {
-      if (!ac.signal.aborted) setVoiceError("Couldn't play the voice reply.");
+      if (!ac.signal.aborted) setVoiceError("Audio synthesis error.");
       console.error(e);
     }
   }
@@ -466,7 +380,7 @@ export function Index() {
             unavailable: r.unavailable,
           });
       } catch {
-        if (!dead) setNet((n) => ({ ...n, status: "disconnected", error: "Status check failed" }));
+        if (!dead) setNet((n) => ({ ...n, status: "disconnected", error: "Network check failed" }));
       }
     };
     void check();
@@ -639,7 +553,7 @@ export function Index() {
       const msg = err instanceof Error ? err.message : "Connection lost. Please try again.";
       setMessages([
         ...messagesRef.current,
-        { role: "assistant", content: `I encountered an issue: ${msg}` },
+        { role: "assistant", content: `Tactical directive issue: ${msg}` },
       ]);
     } finally {
       busyRef.current = false;
@@ -653,50 +567,50 @@ export function Index() {
 
   if (!ready) {
     return (
-      <main className="hud-bg flex min-h-screen items-center justify-center">
-        <LiquidCore />
+      <main className="stealth-carbon-bg flex min-h-screen items-center justify-center">
+        <ArcReactorCore size={200} active />
       </main>
     );
   }
 
   if (!session && !isGuest) {
     return (
-      <main className="hud-bg flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <div className="liquid-glass-card max-w-md w-full p-8 rounded-3xl flex flex-col items-center shadow-2xl">
-          <div className="animate-float mb-6">
-            <LiquidCore size={180} />
+      <main className="stealth-carbon-bg flex min-h-screen flex-col items-center justify-center px-6 text-center">
+        <div className="carbon-hud-card max-w-md w-full p-8 rounded-2xl flex flex-col items-center shadow-2xl border border-sky-400/30">
+          <div className="mb-6">
+            <ArcReactorCore size={200} />
           </div>
 
-          <h1 className="jarvis-title text-3xl sm:text-4xl tracking-widest text-primary drop-shadow-[0_0_20px_rgba(56,189,248,0.6)]">
-            E.D.I.T.H.
+          <h1 className="jarvis-title text-3xl sm:text-4xl tracking-widest text-primary drop-shadow-[0_0_20px_rgba(0,229,255,0.6)]">
+            E.D.I.T.H. X1
           </h1>
-          <p className="mt-2 text-xs tracking-[0.25em] text-cyan-300 font-semibold">
-            TACTICAL DEFENSE & INTELLIGENCE SYSTEM
+          <p className="mt-2 text-xs tracking-[0.25em] text-cyan-300 font-semibold font-mono">
+            STARK SEC-9 // TACTICAL OPERATING CONSOLE
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 max-w-xs">
-            Multi-Key Resilient Neural Engine with Liquid Glass Architecture.
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 max-w-xs font-mono">
+            Gemini 2.0 Flash sub-second engine with 4-key automated failover cascade.
           </p>
 
-          <div className="mt-4 flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-[11px] text-cyan-300">
+          <div className="mt-4 flex items-center gap-2 rounded-full border border-sky-400/40 bg-sky-950/40 px-3 py-1 text-[11px] text-cyan-300 font-mono">
             <ShieldCheck className="h-3.5 w-3.5 text-green-400" />
-            <span>Automatic Failover: {totalKeys} Key Pool Enabled</span>
+            <span>Cascade Pool: {totalKeys} Keys Armed</span>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 w-full">
             <button onClick={startGuestMode} className="liquid-glass-btn w-full py-3 text-xs tracking-widest flex items-center justify-center gap-2">
-              <Sparkles className="h-4 w-4" /> ENTER AS GUEST / DEMO
+              <Sparkles className="h-4 w-4" /> INITIALIZE TACTICAL INTERFACE
             </button>
             <button
               onClick={signIn}
-              className="rounded-xl border border-primary/30 bg-black/40 py-2.5 text-xs tracking-wider text-muted-foreground transition hover:border-primary hover:text-foreground"
+              className="rounded-xl border border-primary/30 bg-black/50 py-2.5 text-xs tracking-wider text-muted-foreground transition hover:border-primary hover:text-foreground font-mono"
             >
-              Sign in with Google Account
+              Authenticate via Google Cloud
             </button>
           </div>
 
-          {authError && <p className="mt-4 text-xs text-destructive">{authError}</p>}
+          {authError && <p className="mt-4 text-xs text-destructive font-mono">{authError}</p>}
 
-          <div className="mt-8 pt-4 border-t border-primary/10 w-full flex items-center justify-between text-[10px] text-muted-foreground/60 tracking-widest">
+          <div className="mt-8 pt-4 border-t border-primary/20 w-full flex items-center justify-between text-[10px] text-muted-foreground/60 tracking-widest font-mono">
             <span>STARK INDUSTRIES SEC-9</span>
             <span>EDITH X1 TACTICAL</span>
           </div>
@@ -706,7 +620,7 @@ export function Index() {
   }
 
   return (
-    <main className="hud-bg flex h-screen flex-col overflow-hidden">
+    <main className="stealth-carbon-bg flex h-screen flex-col overflow-hidden">
       {showSettings && (
         <SettingsPanel
           settings={settings}
@@ -723,26 +637,45 @@ export function Index() {
         />
       )}
 
-      {/* Liquid Glass Top Navigation Bar */}
-      <header className="liquid-navbar z-20 flex items-center gap-3 px-5 py-3">
+      {/* Top Stealth Tactical Nav Bar */}
+      <header className="liquid-navbar z-20 flex items-center gap-3 px-5 py-3 border-b border-sky-400/25 bg-black/60 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <LiquidCore size={38} active={loading} ambient={ambientActive && phase === "idle"} />
+          <ArcReactorCore
+            size={38}
+            active={loading}
+            state={phase}
+            ambient={ambientActive && phase === "idle"}
+          />
           <div>
-            <div className="jarvis-title text-sm sm:text-base font-bold tracking-widest text-primary drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]">
-              E.D.I.T.H.
+            <div className="jarvis-title text-sm sm:text-base font-bold tracking-widest text-primary drop-shadow-[0_0_12px_rgba(0,229,255,0.6)]">
+              E.D.I.T.H. X1
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] tracking-wider text-muted-foreground">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : ambientActive ? "bg-cyan-400 animate-ping" : "bg-emerald-400"}`} />
-              {loading ? "PROCESSING..." : ambientActive ? "AMBIENT ACTIVITY" : isGuest ? "GUEST MODE" : "ONLINE"}
+            <div className="flex items-center gap-1.5 text-[10px] tracking-wider text-muted-foreground font-mono">
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${
+                  loading
+                    ? "bg-amber-400 animate-pulse"
+                    : ambientActive
+                    ? "bg-cyan-400 animate-ping"
+                    : "bg-emerald-400"
+                }`}
+              />
+              {loading
+                ? "PROCESSING DIRECTIVE..."
+                : ambientActive
+                ? "AMBIENT ROOM SENSE"
+                : isGuest
+                ? "STANDALONE HUD"
+                : "STARK SEC-9 ONLINE"}
             </div>
           </div>
         </div>
 
         {/* Fallback Keys Health Badge */}
         <div className="hidden md:flex items-center gap-1.5 ml-4">
-          <div className="liquid-badge text-[10px]">
+          <div className="liquid-badge text-[10px] font-mono border-sky-400/40 bg-sky-950/30">
             <KeyRound className="h-3 w-3 text-primary" />
-            <span>{totalKeys} KEYS ACTIVE</span>
+            <span>{totalKeys} KEYS CASCADE READY</span>
           </div>
         </div>
 
@@ -750,17 +683,17 @@ export function Index() {
           {/* Diagnostics Button */}
           <button
             onClick={() => setShowDiagnostics(true)}
-            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
+            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
             title="Telemetry & Connection Diagnostics"
           >
             <Activity className="h-3.5 w-3.5 text-primary animate-pulse" />
-            <span className="hidden sm:inline">DIAGNOSTICS</span>
+            <span className="hidden sm:inline">TELEMETRY</span>
           </button>
 
           {/* Network Pill */}
           <button
             onClick={() => setShowNet(!showNet)}
-            className="liquid-glass-pill hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
+            className="liquid-glass-pill hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
             aria-label="EDITH NETWORK status"
           >
             <span
@@ -772,19 +705,19 @@ export function Index() {
                   : "bg-red-500"
               }`}
             />
-            NET {net.status === "connected" ? "SYNCED" : net.status === "connecting" ? "CONNECTING" : "OFFLINE"}
+            NET {net.status === "connected" ? "SYNCED" : net.status === "connecting" ? "LINKING" : "OFFLINE"}
           </button>
 
-          {/* Liquid Mode Switcher Pill */}
-          <div className="liquid-glass-pill flex items-center p-0.5">
+          {/* Tactical Mode Switcher Pill */}
+          <div className="liquid-glass-pill flex items-center p-0.5 border-sky-400/30">
             <button
               onClick={() => {
                 if (mode === "voice") stopConvo();
                 setMode("voice");
               }}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
                 mode === "voice"
-                  ? "bg-primary text-black shadow-[0_0_12px_rgba(56,189,248,0.6)]"
+                  ? "bg-primary text-black shadow-[0_0_12px_rgba(0,229,255,0.7)]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -795,9 +728,9 @@ export function Index() {
                 if (mode === "voice") stopConvo();
                 setMode("text");
               }}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all font-mono ${
                 mode === "text"
-                  ? "bg-primary text-black shadow-[0_0_12px_rgba(56,189,248,0.6)]"
+                  ? "bg-primary text-black shadow-[0_0_12px_rgba(0,229,255,0.7)]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -808,7 +741,7 @@ export function Index() {
           {/* Settings Button */}
           <button
             onClick={() => setShowSettings(true)}
-            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
+            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition font-mono border-sky-400/30"
           >
             <Sliders className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">SETTINGS</span>
@@ -818,7 +751,7 @@ export function Index() {
             <button
               onClick={clearChat}
               title="Clear transcript"
-              className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive transition"
+              className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive transition border-sky-400/30"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -831,7 +764,7 @@ export function Index() {
               setIsGuest(false);
             }}
             title="Sign out / Exit"
-            className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
+            className="liquid-glass-pill flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition border-sky-400/30"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
@@ -840,11 +773,11 @@ export function Index() {
 
       {/* Network Diagnostics Dropdown */}
       {showNet && (
-        <div className="liquid-glass border-b border-primary/20 px-5 py-3 text-xs backdrop-blur-2xl z-10 animate-fade-in">
+        <div className="carbon-hud-card border-b border-primary/30 px-5 py-3 text-xs backdrop-blur-2xl z-10 animate-fade-in font-mono">
           <div className="mx-auto flex max-w-3xl flex-col gap-2">
             <div className="tracking-widest text-primary flex items-center justify-between">
               <span>EDITH NETWORK PROTOCOL — {net.status.toUpperCase()}</span>
-              <span className="text-[10px] text-muted-foreground">{net.tools.length} TOOLS MOUNTED</span>
+              <span className="text-[10px] text-muted-foreground">{net.tools.length} MODULES ARMED</span>
             </div>
             {net.tools.length > 0 && (
               <div className="text-muted-foreground text-[11px]">
@@ -863,79 +796,83 @@ export function Index() {
       {/* MAIN VIEWPORT: VOICE OR TEXT */}
       {mode === "voice" ? (
         <section className="flex flex-1 flex-col items-center justify-between overflow-hidden px-6 py-6 text-center relative">
-          {/* Top HUD Telemetry cards */}
+          {/* Top Tactical HUD Telemetry Cards */}
           <div className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
             <div
               onClick={() => setShowDiagnostics(true)}
-              className="liquid-glass-card rounded-2xl p-3 text-left cursor-pointer hover:border-primary/60 transition"
+              className="carbon-hud-card rounded-xl p-3 text-left cursor-pointer hover:border-primary/60 transition"
             >
-              <span className="hud-label text-[9px] block mb-1">NEURAL FAILOVER POOL</span>
-              <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
+              <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
+                NEURAL POOL // CASCADE
+              </span>
+              <div className="text-xs font-semibold text-primary flex items-center gap-1.5 font-mono">
                 <ShieldCheck className="h-3.5 w-3.5 text-green-400" />
                 <span>{totalKeys} KEYS STANDBY</span>
               </div>
             </div>
 
-            <div className="liquid-glass-card rounded-2xl p-3 text-left">
-              <span className="hud-label text-[9px] block mb-1">CORE STATUS</span>
-              <div className="text-xs font-semibold text-primary">
+            <div className="carbon-hud-card rounded-xl p-3 text-left">
+              <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
+                ARC REACTOR STATUS
+              </span>
+              <div className="text-xs font-semibold text-cyan-300 font-mono">
                 {phase === "listening"
-                  ? "TRANSCRIBING AUDIO"
+                  ? "INGESTING ACOUSTIC TELEMETRY"
                   : phase === "thinking"
-                  ? "GENERATING TACTICAL RESPONSE"
+                  ? "COMPUTING NEURAL RESPONSE..."
                   : phase === "speaking"
-                  ? "SYNTHESIZING SPEECH"
+                  ? "SYNTHESIZING AUDIO BEAM"
                   : ambientActive
-                  ? "AMBIENT MONITOR ACTIVE"
-                  : "READY FOR VOCAL PROMPT"}
+                  ? "PASSIVE SENSOR PULSE"
+                  : "STANDBY // READY FOR DIRECTIVE"}
               </div>
             </div>
 
-            <div className="liquid-glass-card rounded-2xl p-3 text-left hidden sm:block">
-              <span className="hud-label text-[9px] block mb-1">VOICE THRESHOLD</span>
-              <div className="text-xs font-semibold text-cyan-300 flex items-center justify-between">
-                <span>{Math.round((settings.mic_threshold ?? 0.12) * 100)}% GATE</span>
+            <div className="carbon-hud-card rounded-xl p-3 text-left hidden sm:block">
+              <span className="hud-label text-[9px] block mb-1 text-sky-400 font-mono">
+                MIC GATE SENSITIVITY
+              </span>
+              <div className="text-xs font-semibold text-primary flex items-center justify-between font-mono">
+                <span>{Math.round((settings.mic_threshold ?? 0.12) * 100)}% THRESHOLD</span>
                 <span className="text-[10px] text-muted-foreground font-normal">{settings.voice}</span>
               </div>
             </div>
           </div>
 
-          {/* Central Reactor Core Interactive Orb */}
+          {/* Central Holographic Arc Reactor Assembly */}
           <div className="my-auto flex flex-col items-center justify-center gap-6">
-            <button
+            <ArcReactorCore
+              size={290}
+              reactive
+              active={phase === "thinking" || phase === "speaking"}
+              ambient={ambientActive && phase === "idle"}
+              state={phase}
               onClick={convo ? stopConvo : startConvo}
-              aria-label={convo ? "End conversation" : "Start talking"}
-              className="rounded-full transition-transform hover:scale-105 active:scale-95 focus:outline-none"
-            >
-              <LiquidCore
-                size={260}
-                reactive
-                active={phase === "thinking" || phase === "speaking"}
-                ambient={ambientActive && phase === "idle"}
-              />
-            </button>
+            />
 
             {ambientActive && phase === "idle" && (
-              <div className="ambient-pulse-badge flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-400/40 bg-sky-400/10 text-[10px] text-cyan-300 font-mono tracking-widest">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-400/40 bg-sky-950/40 text-[10px] text-cyan-300 font-mono tracking-widest shadow-[0_0_15px_rgba(0,229,255,0.3)]">
                 <Radio className="h-3 w-3 text-cyan-400 animate-pulse" />
-                <span>AMBIENT MONITOR: BACKGROUND ACTIVITY DETECTED</span>
+                <span>AMBIENT SONAR: ROOM ACTIVITY DETECTED</span>
               </div>
             )}
 
-            <div className="liquid-glass-pill px-6 py-2 text-xs tracking-[0.3em] font-semibold text-primary shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+            <div className="liquid-glass-pill px-6 py-2 text-xs tracking-[0.3em] font-semibold text-primary shadow-[0_0_20px_rgba(0,229,255,0.4)] font-mono border-sky-400/40">
               {phase === "listening"
-                ? "● LISTENING TO USER..."
+                ? "● INGESTING COMMAND... SPEAK FREELY"
                 : phase === "thinking"
-                ? "◆ PROCESSING COMMAND..."
+                ? "◆ GEMINI 2.0 FLASH COMPUTING..."
                 : phase === "speaking"
-                ? "▲ VOCALIZING REPLY..."
-                : "TAP THE CORE TO ACTIVATE"}
+                ? "▲ VOCAL TRANSMISSION IN PROGRESS"
+                : "TAP THE ARC REACTOR TO ACTIVATE"}
             </div>
 
             {messages.length > 0 && (
-              <div className="liquid-glass-card max-w-lg rounded-2xl px-5 py-3 text-xs leading-relaxed text-muted-foreground border-primary/20 backdrop-blur-xl">
-                <span className="text-[10px] tracking-widest text-primary block mb-1">LAST TRANSMISSION</span>
-                <p className="line-clamp-3">
+              <div className="carbon-hud-card max-w-lg rounded-xl px-5 py-3 text-xs leading-relaxed text-muted-foreground border-primary/30 backdrop-blur-xl">
+                <span className="text-[10px] tracking-widest text-primary block mb-1 font-mono font-bold">
+                  LAST TACTICAL TRANSMISSION
+                </span>
+                <p className="line-clamp-3 font-mono text-foreground/90">
                   {messages[messages.length - 1]!.content.replace(/[*_#`]/g, "")}
                 </p>
               </div>
@@ -945,31 +882,31 @@ export function Index() {
               {phase === "listening" && (
                 <button
                   onClick={() => void finishTurn()}
-                  className="liquid-glass-btn px-4 py-2 text-xs"
+                  className="liquid-glass-btn px-4 py-2 text-xs font-mono"
                 >
-                  TRANSCRIBE NOW
+                  TRANSCRIBE DIRECTIVE
                 </button>
               )}
               {convo && (
                 <button
                   onClick={stopConvo}
-                  className="liquid-glass-btn border-rose-500/50 text-rose-400 hover:bg-rose-500/20 px-4 py-2 text-xs flex items-center gap-1.5"
+                  className="liquid-glass-btn border-rose-500/50 text-rose-400 hover:bg-rose-500/20 px-4 py-2 text-xs flex items-center gap-1.5 font-mono"
                   aria-label="End conversation"
                 >
-                  <Square className="h-3.5 w-3.5 fill-current" /> STOP
+                  <Square className="h-3.5 w-3.5 fill-current" /> DISENGAGE
                 </button>
               )}
             </div>
 
             {voiceError && (
-              <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive">
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive font-mono">
                 <ShieldAlert className="h-4 w-4" /> {voiceError}
               </div>
             )}
           </div>
 
-          <div className="text-[10px] tracking-[0.25em] text-muted-foreground/60 pb-2">
-            STARK INDUSTRIES • E.D.I.T.H. X1 TACTICAL INTERFACE
+          <div className="text-[10px] tracking-[0.25em] text-muted-foreground/60 pb-2 font-mono">
+            STARK INDUSTRIES SEC-9 // E.D.I.T.H. X1 TACTICAL CONSOLE
           </div>
         </section>
       ) : (
@@ -979,14 +916,14 @@ export function Index() {
             <div className="mx-auto flex max-w-3xl flex-col gap-4">
               {messages.length === 0 && (
                 <div className="animate-fade-in mt-12 flex flex-col items-center text-center">
-                  <div className="animate-float mb-4">
-                    <LiquidCore size={140} ambient={ambientActive} />
+                  <div className="mb-4">
+                    <ArcReactorCore size={160} state="idle" ambient={ambientActive} />
                   </div>
-                  <h3 className="text-base font-semibold tracking-wider text-primary">
-                    E.D.I.T.H. STANDBY
+                  <h3 className="text-base font-semibold tracking-wider text-primary font-mono">
+                    E.D.I.T.H. X1 // TACTICAL STANDBY
                   </h3>
-                  <p className="mt-2 text-xs text-muted-foreground max-w-sm">
-                    Good day, sir. All neural subsystems and {totalKeys} API keys are online. How may I assist you today?
+                  <p className="mt-2 text-xs text-muted-foreground max-w-sm font-mono leading-relaxed">
+                    Good day, sir. Gemini 2.0 Flash neural subsystems and {totalKeys} API keys are online. How may I assist you today?
                   </p>
                 </div>
               )}
@@ -998,15 +935,15 @@ export function Index() {
                     m.role === "user" ? "liquid-msg-user self-end" : "liquid-msg-ai self-start"
                   }`}
                 >
-                  <div className="mb-1 text-[10px] font-semibold tracking-widest text-primary/80">
-                    {m.role === "user" ? "YOU" : "E.D.I.T.H."}
+                  <div className="mb-1 text-[10px] font-semibold tracking-widest text-primary/80 font-mono">
+                    {m.role === "user" ? "COMMANDER (YOU)" : "E.D.I.T.H. X1"}
                   </div>
                   {m.role === "assistant" ? (
                     <div className="md text-sm leading-relaxed text-foreground/95">
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground font-mono">
                       {m.content}
                     </p>
                   )}
@@ -1014,9 +951,9 @@ export function Index() {
                   {m.role === "assistant" && (
                     <button
                       onClick={() => speak(m.content)}
-                      className="mt-2 flex items-center gap-1 text-[10px] tracking-widest text-muted-foreground hover:text-primary transition"
+                      className="mt-2 flex items-center gap-1 text-[10px] tracking-widest text-muted-foreground hover:text-primary transition font-mono"
                     >
-                      <Volume2 className="h-3 w-3" /> PLAY VOICE REPLY
+                      <Volume2 className="h-3 w-3" /> TRANSMIT AUDIO
                     </button>
                   )}
                 </div>
@@ -1024,19 +961,18 @@ export function Index() {
 
               {loading && (
                 <div className="liquid-msg-ai self-start p-4">
-                  <span className="typing">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
+                  <div className="flex items-center gap-2 text-xs text-cyan-300 font-mono">
+                    <Zap className="h-3.5 w-3.5 animate-bounce" />
+                    <span>Gemini 2.0 Flash synthesizing response...</span>
+                  </div>
                 </div>
               )}
               <div ref={endRef} />
             </div>
           </section>
 
-          {/* Floating Liquid Glass Input Bar */}
-          <form onSubmit={send} className="liquid-glass border-t border-primary/20 p-4 z-10">
+          {/* Floating Tactical Console Input Bar */}
+          <form onSubmit={send} className="carbon-hud-card border-t border-sky-400/30 p-4 z-10 bg-black/70 backdrop-blur-2xl">
             <div className="mx-auto flex max-w-3xl items-center gap-2">
               <button
                 type="button"
@@ -1045,7 +981,7 @@ export function Index() {
                 aria-label={recording ? "Stop recording" : "Speak"}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all ${
                   recording
-                    ? "border-rose-500 bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)] animate-pulse"
+                    ? "border-rose-500 bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.7)] animate-pulse"
                     : "border-primary/40 bg-primary/10 text-primary hover:border-primary hover:bg-primary/20"
                 }`}
               >
@@ -1061,20 +997,20 @@ export function Index() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={recording ? "Listening to your voice, sir..." : "Type a tactical query or command..."}
-                className="liquid-glass-input min-w-0 flex-1 px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                placeholder={recording ? "Acoustic ingestion active... speak directive" : "Transmit tactical directive..."}
+                className="liquid-glass-input min-w-0 flex-1 px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none font-mono"
               />
 
               <button
                 disabled={loading || !input.trim()}
-                className="liquid-glass-btn flex h-10 items-center justify-center gap-1.5 px-4 text-xs disabled:opacity-40"
+                className="liquid-glass-btn flex h-10 items-center justify-center gap-1.5 px-4 text-xs disabled:opacity-40 font-mono"
               >
-                <span>SEND</span>
+                <span>TRANSMIT</span>
                 <SendHorizontal className="h-3.5 w-3.5" />
               </button>
             </div>
             {voiceError && (
-              <p className="mx-auto mt-2 max-w-3xl text-center text-xs text-destructive">
+              <p className="mx-auto mt-2 max-w-3xl text-center text-xs text-destructive font-mono">
                 {voiceError}
               </p>
             )}

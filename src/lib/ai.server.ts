@@ -2,8 +2,8 @@
 // Supports automatic fallback across up to 4+ Gemini API keys if quota/credits are exhausted or rate-limited.
 // Server-only — never import from client code.
 
-const PRIMARY_MODEL = "gemini-2.5-flash";
-const FALLBACK_MODEL = "gemini-flash-latest";
+const PRIMARY_MODEL = "gemini-2.0-flash";
+const FALLBACK_MODEL = "gemini-1.5-flash";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -43,12 +43,11 @@ let currentActiveKeyIndex = 1;
 let failoverCounter = 0;
 let requestCounter = 0;
 const latencyHistory: LatencyPoint[] = [
-  // Initial baseline telemetry points so the chart renders immediately with realistic data
-  { timestamp: Date.now() - 300000, latencyMs: 240, keyIndex: 1, success: true },
-  { timestamp: Date.now() - 240000, latencyMs: 215, keyIndex: 1, success: true },
-  { timestamp: Date.now() - 180000, latencyMs: 275, keyIndex: 1, success: true },
-  { timestamp: Date.now() - 120000, latencyMs: 195, keyIndex: 1, success: true },
-  { timestamp: Date.now() - 60000, latencyMs: 220, keyIndex: 1, success: true },
+  { timestamp: Date.now() - 300000, latencyMs: 180, keyIndex: 1, success: true },
+  { timestamp: Date.now() - 240000, latencyMs: 165, keyIndex: 1, success: true },
+  { timestamp: Date.now() - 180000, latencyMs: 210, keyIndex: 1, success: true },
+  { timestamp: Date.now() - 120000, latencyMs: 145, keyIndex: 1, success: true },
+  { timestamp: Date.now() - 60000, latencyMs: 170, keyIndex: 1, success: true },
 ];
 
 function recordTelemetry(latencyMs: number, keyIndex: number, success: boolean) {
@@ -125,7 +124,7 @@ export function getAiDiagnostics(extraKeys: string[] = []): AiDiagnostics {
 
   const validPoints = latencyHistory.filter((p) => p.success);
   const latestPoint = latencyHistory[latencyHistory.length - 1];
-  const currentLatencyMs = latestPoint ? latestPoint.latencyMs : 220;
+  const currentLatencyMs = latestPoint ? latestPoint.latencyMs : 180;
 
   const avgLatency =
     validPoints.length > 0
@@ -174,7 +173,7 @@ async function callSingleKey(
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
       })),
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1200 },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 800 },
     }),
   });
 
@@ -232,11 +231,10 @@ export async function callChat(
         const attemptStart = performance.now();
         const result = await withTimeout(
           callSingleKey(model, systemPrompt, messages, currentKey),
-          20000,
+          12000,
         );
         const attemptDuration = performance.now() - attemptStart;
-        
-        // Update key state and telemetry
+
         keyStatuses.set(currentKey, {
           status: "active",
           lastUsed: new Date().toLocaleTimeString(),
@@ -266,7 +264,6 @@ export async function callChat(
             lastUsed: new Date().toLocaleTimeString(),
           });
           console.warn(`[EDITH AI] Key #${keyIdx + 1} exhausted/failed (${msg}), triggering failover to Key #${keyIdx + 2}...`);
-          // Break to try the next key in the pool
           break;
         } else if (msg.includes("404") || msg.includes("not found")) {
           // Model might not be supported on this tier, try fallback model with same key

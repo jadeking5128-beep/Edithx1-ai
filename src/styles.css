@@ -344,6 +344,72 @@ body { font-family: "Rajdhani", system-ui, sans-serif; }
               inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* STARK HUD TACTICAL BRACKETS & RETICLES */
+.hud-bracket-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(7, 11, 24, 0.85) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  backdrop-filter: blur(24px) saturate(190%);
+}
+
+.hud-bracket-card::before,
+.hud-bracket-card::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+.hud-bracket-card::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid rgba(56, 189, 248, 0.85);
+  border-left: 2px solid rgba(56, 189, 248, 0.85);
+}
+
+.hud-bracket-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid rgba(56, 189, 248, 0.85);
+  border-right: 2px solid rgba(56, 189, 248, 0.85);
+}
+
+.stark-chip {
+  position: relative;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.stark-chip:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.75);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+  transform: translateY(-1px);
+}
+
+.stark-chip:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.hud-telemetry-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+
 /* Liquid Fluid Core Reactor */
 .liquid-core-container {
   position: relative;
@@ -461,6 +527,80 @@ body { font-family: "Rajdhani", system-ui, sans-serif; }
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--primary);
+}
+
+/* ==========================================================================
+   STEALTH CARBON-FIBER TACTICAL CONSOLE SYSTEM
+   ========================================================================== */
+
+.stealth-carbon-bg {
+  background-color: #040711;
+  background-image: 
+    radial-gradient(circle at 50% 28%, rgba(0, 229, 255, 0.07) 0%, transparent 60%),
+    radial-gradient(circle at 85% 85%, rgba(14, 165, 233, 0.04) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(15, 23, 42, 0.6) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(15, 23, 42, 0.6) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(15, 23, 42, 0.6) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(15, 23, 42, 0.6) 75%);
+  background-size: 100% 100%, 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
+  background-position: 0 0, 0 0, 0 0, 0 4px, 4px -4px, -4px 0px;
+  color: #f8fafc;
+}
+
+.carbon-hud-card {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.85) 0%, rgba(6, 10, 20, 0.95) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15),
+              0 0 18px rgba(0, 229, 255, 0.06);
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.carbon-hud-card:hover {
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7),
+              0 0 25px rgba(0, 229, 255, 0.15);
+}
+
+.carbon-hud-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #00e5ff;
+  border-left: 2px solid #00e5ff;
+  pointer-events: none;
+}
+
+.carbon-hud-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #00e5ff;
+  border-right: 2px solid #00e5ff;
+  pointer-events: none;
+}
+
+.ambient-core-active {
+  animation: ambient-sonar 2.6s ease-in-out infinite;
+}
+
+@keyframes ambient-sonar {
+  0%, 100% {
+    filter: drop-shadow(0 0 35px rgba(0, 229, 255, 0.45));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 65px rgba(0, 229, 255, 0.85)) drop-shadow(0 0 100px rgba(14, 165, 233, 0.4));
+    transform: scale(1.03);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
