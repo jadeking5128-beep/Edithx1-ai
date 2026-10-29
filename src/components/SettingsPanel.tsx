@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SENSITIVE, TONES, VOICES, type StyxSettings } from "@/lib/styx-settings";
-import { KeyRound, ShieldCheck, Sparkles, Check, Volume2, Sliders } from "lucide-react";
+import { audioLevel } from "@/lib/audio-level";
+import {
+  KeyRound,
+  ShieldCheck,
+  Sparkles,
+  Check,
+  Volume2,
+  Sliders,
+  Mic,
+  Activity,
+  Radio,
+} from "lucide-react";
 
 type Props = {
   settings: StyxSettings;
@@ -9,7 +20,15 @@ type Props = {
   onPreview: (voice: string) => void;
 };
 
-function Options({ items, value, onPick }: { items: [string, string][]; value: string; onPick: (v: string) => void }) {
+function Options({
+  items,
+  value,
+  onPick,
+}: {
+  items: [string, string][];
+  value: string;
+  onPick: (v: string) => void;
+}) {
   return (
     <div className="grid grid-cols-2 gap-2">
       {items.map(([id, label]) => (
@@ -32,7 +51,19 @@ function Options({ items, value, onPick }: { items: [string, string][]; value: s
 
 export function SettingsPanel({ settings, onChange, onClose, onPreview }: Props) {
   const [savedNote, setSavedNote] = useState(false);
+  const [liveMeter, setLiveMeter] = useState(0);
   const fallbackKeys = settings.fallback_keys ?? ["", "", ""];
+
+  // Subscribe to live audioLevel to display input calibration meter
+  useEffect(() => {
+    let anim = 0;
+    const update = () => {
+      setLiveMeter(audioLevel.value);
+      anim = requestAnimationFrame(update);
+    };
+    anim = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(anim);
+  }, []);
 
   const set = (patch: Partial<StyxSettings>) => {
     onChange({ ...settings, ...patch });
@@ -46,8 +77,14 @@ export function SettingsPanel({ settings, onChange, onClose, onPreview }: Props)
     set({ fallback_keys: next });
   };
 
+  const micPercent = Math.round((settings.mic_threshold ?? 0.12) * 100);
+  const livePercent = Math.min(100, Math.round(liveMeter * 100));
+
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-md" onClick={onClose}>
+    <div
+      className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-md"
+      onClick={onClose}
+    >
       <aside
         className="liquid-glass h-full w-full max-w-md overflow-y-auto border-l border-primary/30 p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -71,6 +108,84 @@ export function SettingsPanel({ settings, onChange, onClose, onPreview }: Props)
             <Check className="h-4 w-4" /> Parameters synchronized.
           </div>
         )}
+
+        {/* Microphone Input Threshold & Voice Detection Slider */}
+        <section className="mb-8">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 text-primary" />
+              <h3 className="hud-label mb-0 text-foreground">Microphone Sensitivity & Detection</h3>
+            </div>
+            <span className="liquid-badge text-[10px]">{micPercent}% THRESHOLD</span>
+          </div>
+
+          <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+            Adjust the sound gate threshold for voice-to-text. Higher values filter out ambient room noise; lower values detect gentle whisper commands.
+          </p>
+
+          <div className="liquid-glass-card rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Detection Threshold</span>
+              <span className="font-mono font-bold text-primary">{micPercent}%</span>
+            </div>
+
+            <input
+              type="range"
+              min="0.02"
+              max="0.45"
+              step="0.01"
+              value={settings.mic_threshold ?? 0.12}
+              onChange={(e) => set({ mic_threshold: parseFloat(e.target.value) })}
+              className="w-full accent-primary h-2 bg-slate-800 rounded-lg cursor-pointer"
+            />
+
+            <div className="flex justify-between text-[10px] text-muted-foreground/60 tracking-wider">
+              <span>High Sensitivity (2%)</span>
+              <span>Default (12%)</span>
+              <span>Low Sensitivity (45%)</span>
+            </div>
+
+            {/* Live Visual Meter */}
+            <div className="pt-2 border-t border-primary/10">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                <span>Live Audio Signal:</span>
+                <span className={livePercent >= micPercent ? "text-green-400 font-bold" : "text-muted-foreground"}>
+                  {livePercent}% {livePercent >= micPercent ? "(ABOVE THRESHOLD)" : "(IGNORED)"}
+                </span>
+              </div>
+              <div className="relative h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-primary/20">
+                <div
+                  className="h-full bg-gradient-to-r from-sky-500 to-cyan-300 transition-all duration-75"
+                  style={{ width: `${livePercent}%` }}
+                />
+                {/* Marker line for current threshold */}
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-rose-400 shadow-[0_0_4px_rgba(244,63,94,0.8)]"
+                  style={{ left: `${(settings.mic_threshold ?? 0.12) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Background Ambient Listen Mode Toggle */}
+          <label className="liquid-glass-card mt-3 flex cursor-pointer items-start justify-between rounded-xl p-3 text-xs tracking-wider">
+            <div className="pr-3">
+              <div className="flex items-center gap-1.5 font-semibold text-primary">
+                <Radio className="h-3.5 w-3.5" />
+                <span>Background Ambient 'Listen' Mode</span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground font-normal">
+                Triggers a subtle ethereal visual pulse in the liquid-core-container when continuous ambient activity is sensed, without triggering commands.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.background_listen ?? true}
+              onChange={(e) => set({ background_listen: e.target.checked })}
+              className="mt-1 h-4 w-4 accent-primary"
+            />
+          </label>
+        </section>
 
         {/* Gemini API Keys & Automatic Fallback */}
         <section className="mb-8">

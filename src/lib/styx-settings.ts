@@ -4,6 +4,8 @@ export type StyxSettings = {
   tone: string;
   sensitive: string;
   fallback_keys?: string[];
+  mic_threshold: number; // 0.01 to 0.50 (voice detection threshold)
+  background_listen: boolean; // Continuous passive monitoring with subtle visual pulse
 };
 
 export const DEFAULT_SETTINGS: StyxSettings = {
@@ -12,6 +14,8 @@ export const DEFAULT_SETTINGS: StyxSettings = {
   tone: "formal",
   sensitive: "balanced",
   fallback_keys: ["", "", ""],
+  mic_threshold: 0.12,
+  background_listen: true,
 };
 
 export const VOICES = [

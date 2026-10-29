@@ -351,6 +351,39 @@ body { font-family: "Rajdhani", system-ui, sans-serif; }
   align-items: center;
   justify-content: center;
   filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.35));
+  transition: filter 0.5s ease;
+}
+
+.liquid-core-container.ambient-active {
+  filter: drop-shadow(0 0 55px rgba(56, 189, 248, 0.65)) drop-shadow(0 0 95px rgba(14, 165, 233, 0.3));
+  animation: ambient-core-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes ambient-core-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 45px rgba(56, 189, 248, 0.5));
+  }
+  50% {
+    transform: scale(1.035);
+    filter: drop-shadow(0 0 70px rgba(56, 189, 248, 0.85)) drop-shadow(0 0 110px rgba(14, 165, 233, 0.45));
+  }
+}
+
+.ambient-pulse-badge {
+  animation: ambient-badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ambient-badge-pulse {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+  }
 }
 
 .liquid-core-specular {

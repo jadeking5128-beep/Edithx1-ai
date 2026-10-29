@@ -31,30 +31,55 @@ export function encodeWav(chunks: readonly Float32Array[], sampleRate: number): 
 import { audioLevel } from "@/lib/audio-level";
 
 /** onSilence fires once after speech was heard and then ~1.3s of quiet. */
-export async function recordWav(onSilence?: () => void): Promise<{ stop: () => Promise<File> }> {
+export async function recordWav(
+  onSilence?: () => void,
+  threshold = 0.12,
+): Promise<{ stop: () => Promise<File> }> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   let context: AudioContext | undefined;
   try {
-    try { context = new AudioContext({ sampleRate: 16000 }); context.createMediaStreamSource(stream).disconnect(); }
-    catch { await context?.close().catch(() => {}); context = new AudioContext(); }
+    try {
+      context = new AudioContext({ sampleRate: 16000 });
+      context.createMediaStreamSource(stream).disconnect();
+    } catch {
+      await context?.close().catch(() => {});
+      context = new AudioContext();
+    }
     await Promise.race([context.resume(), new Promise((r) => setTimeout(r, 1000))]);
     const audioContext = context;
     const source = audioContext.createMediaStreamSource(stream);
     const node = audioContext.createScriptProcessor(4096, 1, 1);
     const chunks: Float32Array[] = [];
-    let heard = false, quietMs = 0, fired = false, speechMs = 0;
+    let heard = false,
+      quietMs = 0,
+      fired = false,
+      speechMs = 0;
+
     node.onaudioprocess = (event) => {
       const data = event.inputBuffer.getChannelData(0);
       chunks.push(new Float32Array(data));
       let sum = 0;
       for (let i = 0; i < data.length; i++) sum += data[i]! * data[i]!;
       const lvl = Math.min(1, Math.sqrt(sum / data.length) * 6);
-      audioLevel.value = lvl; audioLevel.source = "mic";
+      audioLevel.value = lvl;
+      audioLevel.source = "mic";
       const ms = (data.length / audioContext.sampleRate) * 1000;
-      if (lvl > 0.12) { heard = true; quietMs = 0; speechMs += ms; } else if (heard) quietMs += ms;
+
+      // Use user-configured mic threshold to discriminate noise from actual speech
+      if (lvl > threshold) {
+        heard = true;
+        quietMs = 0;
+        speechMs += ms;
+      } else if (heard) {
+        quietMs += ms;
+      }
+
       // Auto-send only after real speech (>= 0.5s total) followed by ~1.3s of quiet,
       // so background noise or a brief tap on the mic never fires a send.
-      if (heard && speechMs >= 500 && quietMs > 1300 && !fired) { fired = true; onSilence?.(); }
+      if (heard && speechMs >= 500 && quietMs > 1300 && !fired) {
+        fired = true;
+        onSilence?.();
+      }
     };
     source.connect(node);
     node.connect(audioContext.destination);
@@ -67,7 +92,8 @@ export async function recordWav(onSilence?: () => void): Promise<{ stop: () => P
         node.disconnect();
         source.disconnect();
         node.onaudioprocess = null;
-        audioLevel.value = 0; audioLevel.source = "idle";
+        audioLevel.value = 0;
+        audioLevel.source = "idle";
         const blob = encodeWav(chunks, audioContext.sampleRate);
         await audioContext.close();
         if (blob.size < 2048) throw new Error("Recording was empty; please record again");

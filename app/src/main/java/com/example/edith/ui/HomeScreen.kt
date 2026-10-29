@@ -69,6 +69,7 @@ import com.example.edith.ui.theme.EdithGlassBorder
 import com.example.edith.ui.theme.EdithGlassSpecular
 import com.example.edith.ui.theme.EdithPrimary
 import com.example.edith.ui.theme.EdithSecondary
+import com.example.edith.ui.theme.EdithTertiary
 import com.example.edith.ui.theme.EdithSuccess
 import com.example.edith.ui.theme.EdithSurface
 import com.example.edith.ui.theme.EdithSurfaceVariant

@@ -15,6 +15,8 @@ import {
   LogOut,
   SendHorizontal,
   Volume2,
+  Activity,
+  Radio,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,6 +28,7 @@ import { recordWav } from "@/lib/record-wav";
 import { streamSpeech, unlockAudio } from "@/lib/stream-speech";
 import { audioLevel } from "@/lib/audio-level";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { DiagnosticPanel } from "@/components/DiagnosticPanel";
 import { DEFAULT_SETTINGS, type StyxSettings } from "@/lib/styx-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -60,10 +63,12 @@ function LiquidCore({
   size = 220,
   active = false,
   reactive = false,
+  ambient = false,
 }: {
   size?: number;
   active?: boolean;
   reactive?: boolean;
+  ambient?: boolean;
 }) {
   const r1 = useRef<HTMLDivElement>(null);
   const r2 = useRef<HTMLDivElement>(null);
@@ -81,24 +86,27 @@ function LiquidCore({
       const dt = Math.min(64, t - last);
       last = t;
       smooth += (audioLevel.value - smooth) * 0.22;
-      const speed = 0.025 + smooth * 1.1 + (active ? 0.09 : 0);
+      const speed = 0.025 + smooth * 1.1 + (active ? 0.09 : 0) + (ambient ? 0.04 : 0);
       a += speed * dt;
 
       if (r1.current) r1.current.style.transform = `rotate(${a * 0.4}deg)`;
-      if (r2.current) r2.current.style.transform = `rotate(${-a * 0.8}deg) scale(${1 + smooth * 0.08})`;
-      if (r3.current) r3.current.style.transform = `rotate(${a * 1.4}deg) scale(${1 + smooth * 0.12})`;
+      if (r2.current) r2.current.style.transform = `rotate(${-a * 0.8}deg) scale(${1 + smooth * 0.08 + (ambient ? 0.03 : 0)})`;
+      if (r3.current) r3.current.style.transform = `rotate(${a * 1.4}deg) scale(${1 + smooth * 0.12 + (ambient ? 0.05 : 0)})`;
       if (orb.current) {
-        orb.current.style.transform = `scale(${1 + smooth * 0.45})`;
-        orb.current.style.filter = `brightness(${1 + smooth * 0.9})`;
+        orb.current.style.transform = `scale(${1 + smooth * 0.45 + (ambient ? 0.08 : 0)})`;
+        orb.current.style.filter = `brightness(${1 + smooth * 0.9 + (ambient ? 0.35 : 0)})`;
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [reactive, active]);
+  }, [reactive, active, ambient]);
 
   return (
-    <div className="liquid-core-container" style={{ width: size, height: size }}>
+    <div
+      className={`liquid-core-container ${ambient ? "ambient-active" : ""}`}
+      style={{ width: size, height: size }}
+    >
       <div className="liquid-core-specular" />
       {/* Outer fluid glass dashed track */}
       <div
@@ -144,7 +152,7 @@ const LOCAL_STORAGE_CHAT_KEY = "edith_guest_messages_v2";
 
 export function Index() {
   const [session, setSession] = useState<Session | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [isGuest, setIsGuest] = useState(true); // Default to guest for immediate visibility
   const [ready, setReady] = useState(false);
   const [authError, setAuthError] = useState("");
   const [messages, setMessagesState] = useState<Msg[]>([]);
@@ -174,11 +182,15 @@ export function Index() {
   const [voiceError, setVoiceError] = useState("");
   const [settings, setSettings] = useState<StyxSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const speechAbort = useRef<AbortController | null>(null);
   const [mode, setMode] = useState<"voice" | "text">("voice");
   const [convo, setConvo] = useState(false);
   const convoRef = useRef(false);
   const [phase, setPhase] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const [ambientActive, setAmbientActive] = useState(false);
+  const ambientContextRef = useRef<{ stop: () => void } | null>(null);
+
   const fetchNetStatus = useServerFn(getNetworkStatus);
   const reportAction = useServerFn(reportBrowserAction);
 
@@ -210,12 +222,96 @@ export function Index() {
     }
   }, []);
 
+  // Background 'listen' mode: monitors continuous background activity without explicit commands
+  useEffect(() => {
+    if (!settings.background_listen || convo || recording || phase !== "idle") {
+      if (ambientContextRef.current) {
+        ambientContextRef.current.stop();
+        ambientContextRef.current = null;
+      }
+      setAmbientActive(false);
+      return;
+    }
+
+    let active = true;
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    let consecutiveAbove = 0;
+    let checkTimer: number;
+
+    const startAmbient = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!active) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        ctx = new AudioContext();
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const checkAudio = () => {
+          if (!active) return;
+          analyser.getByteTimeDomainData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const v = (dataArray[i]! - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / dataArray.length) * 4;
+          const threshold = settings.mic_threshold ?? 0.12;
+
+          if (rms > threshold * 0.7) {
+            consecutiveAbove++;
+            if (consecutiveAbove >= 2) {
+              setAmbientActive(true);
+            }
+          } else {
+            consecutiveAbove = 0;
+            setAmbientActive(false);
+          }
+
+          checkTimer = window.setTimeout(checkAudio, 250);
+        };
+
+        checkAudio();
+
+        ambientContextRef.current = {
+          stop: () => {
+            active = false;
+            clearTimeout(checkTimer);
+            stream?.getTracks().forEach((t) => t.stop());
+            ctx?.close().catch(() => {});
+          },
+        };
+      } catch {
+        // Passive microphone access deferred or not granted
+      }
+    };
+
+    void startAmbient();
+
+    return () => {
+      active = false;
+      clearTimeout(checkTimer);
+      if (ambientContextRef.current) {
+        ambientContextRef.current.stop();
+        ambientContextRef.current = null;
+      }
+      setAmbientActive(false);
+    };
+  }, [settings.background_listen, settings.mic_threshold, convo, recording, phase]);
+
   async function listen() {
     if (!convoRef.current) return;
     setVoiceError("");
     try {
       setPhase("listening");
-      const rec = await recordWav(() => void finishTurn());
+      const rec = await recordWav(() => void finishTurn(), settings.mic_threshold ?? 0.12);
       recRef.current = rec;
     } catch {
       setVoiceError("Microphone access was blocked.");
@@ -310,7 +406,7 @@ export function Index() {
     setVoiceError("");
     if (!recording) {
       try {
-        recRef.current = await recordWav();
+        recRef.current = await recordWav(undefined, settings.mic_threshold ?? 0.12);
         setRecording(true);
       } catch {
         setVoiceError("Microphone access was blocked.");
@@ -340,10 +436,17 @@ export function Index() {
       setSession(s);
       if (s) setIsGuest(false);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        if (!data.session) setIsGuest(true);
+        setReady(true);
+      })
+      .catch(() => {
+        setIsGuest(true);
+        setReady(true);
+      });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -613,17 +716,24 @@ export function Index() {
         />
       )}
 
+      {showDiagnostics && (
+        <DiagnosticPanel
+          fallbackKeys={settings.fallback_keys}
+          onClose={() => setShowDiagnostics(false)}
+        />
+      )}
+
       {/* Liquid Glass Top Navigation Bar */}
       <header className="liquid-navbar z-20 flex items-center gap-3 px-5 py-3">
         <div className="flex items-center gap-3">
-          <LiquidCore size={38} active={loading} />
+          <LiquidCore size={38} active={loading} ambient={ambientActive && phase === "idle"} />
           <div>
             <div className="jarvis-title text-sm sm:text-base font-bold tracking-widest text-primary drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]">
               E.D.I.T.H.
             </div>
             <div className="flex items-center gap-1.5 text-[10px] tracking-wider text-muted-foreground">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
-              {loading ? "PROCESSING..." : isGuest ? "GUEST MODE" : "ONLINE"}
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${loading ? "bg-amber-400 animate-pulse" : ambientActive ? "bg-cyan-400 animate-ping" : "bg-emerald-400"}`} />
+              {loading ? "PROCESSING..." : ambientActive ? "AMBIENT ACTIVITY" : isGuest ? "GUEST MODE" : "ONLINE"}
             </div>
           </div>
         </div>
@@ -637,6 +747,16 @@ export function Index() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 text-xs tracking-wider">
+          {/* Diagnostics Button */}
+          <button
+            onClick={() => setShowDiagnostics(true)}
+            className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-primary transition"
+            title="Telemetry & Connection Diagnostics"
+          >
+            <Activity className="h-3.5 w-3.5 text-primary animate-pulse" />
+            <span className="hidden sm:inline">DIAGNOSTICS</span>
+          </button>
+
           {/* Network Pill */}
           <button
             onClick={() => setShowNet(!showNet)}
@@ -745,8 +865,11 @@ export function Index() {
         <section className="flex flex-1 flex-col items-center justify-between overflow-hidden px-6 py-6 text-center relative">
           {/* Top HUD Telemetry cards */}
           <div className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-            <div className="liquid-glass-card rounded-2xl p-3 text-left">
-              <span className="hud-label text-[9px] block mb-1">NEURAL FAILOVER</span>
+            <div
+              onClick={() => setShowDiagnostics(true)}
+              className="liquid-glass-card rounded-2xl p-3 text-left cursor-pointer hover:border-primary/60 transition"
+            >
+              <span className="hud-label text-[9px] block mb-1">NEURAL FAILOVER POOL</span>
               <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 text-green-400" />
                 <span>{totalKeys} KEYS STANDBY</span>
@@ -762,14 +885,17 @@ export function Index() {
                   ? "GENERATING TACTICAL RESPONSE"
                   : phase === "speaking"
                   ? "SYNTHESIZING SPEECH"
+                  : ambientActive
+                  ? "AMBIENT MONITOR ACTIVE"
                   : "READY FOR VOCAL PROMPT"}
               </div>
             </div>
 
             <div className="liquid-glass-card rounded-2xl p-3 text-left hidden sm:block">
-              <span className="hud-label text-[9px] block mb-1">PROTOCOL</span>
-              <div className="text-xs font-semibold text-primary">
-                {settings.tone.toUpperCase()} / {settings.voice}
+              <span className="hud-label text-[9px] block mb-1">VOICE THRESHOLD</span>
+              <div className="text-xs font-semibold text-cyan-300 flex items-center justify-between">
+                <span>{Math.round((settings.mic_threshold ?? 0.12) * 100)}% GATE</span>
+                <span className="text-[10px] text-muted-foreground font-normal">{settings.voice}</span>
               </div>
             </div>
           </div>
@@ -781,8 +907,20 @@ export function Index() {
               aria-label={convo ? "End conversation" : "Start talking"}
               className="rounded-full transition-transform hover:scale-105 active:scale-95 focus:outline-none"
             >
-              <LiquidCore size={260} reactive active={phase === "thinking" || phase === "speaking"} />
+              <LiquidCore
+                size={260}
+                reactive
+                active={phase === "thinking" || phase === "speaking"}
+                ambient={ambientActive && phase === "idle"}
+              />
             </button>
+
+            {ambientActive && phase === "idle" && (
+              <div className="ambient-pulse-badge flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-400/40 bg-sky-400/10 text-[10px] text-cyan-300 font-mono tracking-widest">
+                <Radio className="h-3 w-3 text-cyan-400 animate-pulse" />
+                <span>AMBIENT MONITOR: BACKGROUND ACTIVITY DETECTED</span>
+              </div>
+            )}
 
             <div className="liquid-glass-pill px-6 py-2 text-xs tracking-[0.3em] font-semibold text-primary shadow-[0_0_20px_rgba(56,189,248,0.3)]">
               {phase === "listening"
@@ -842,7 +980,7 @@ export function Index() {
               {messages.length === 0 && (
                 <div className="animate-fade-in mt-12 flex flex-col items-center text-center">
                   <div className="animate-float mb-4">
-                    <LiquidCore size={140} />
+                    <LiquidCore size={140} ambient={ambientActive} />
                   </div>
                   <h3 className="text-base font-semibold tracking-wider text-primary">
                     E.D.I.T.H. STANDBY
