@@ -18,6 +18,7 @@ import {
   Activity,
   Radio,
   Zap,
+  Download,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
@@ -636,6 +637,14 @@ export function Index() {
             <button onClick={startGuestMode} className="ios-liquid-btn w-full py-3.5 text-xs tracking-widest flex items-center justify-center gap-2">
               <Sparkles className="h-4 w-4" /> INITIALIZE TACTICAL INTERFACE
             </button>
+            <a
+              href="/edith-x1.apk"
+              download="edith-x1.apk"
+              className="ios-liquid-pill py-2.5 text-xs tracking-wider text-cyan-300 hover:text-white flex items-center justify-center gap-2 font-mono shadow-[0_0_15px_rgba(0,229,255,0.2)]"
+            >
+              <Download className="h-3.5 w-3.5 text-primary" />
+              Download Android APK (16MB)
+            </a>
             <button
               onClick={signIn}
               className="ios-liquid-pill py-2.5 text-xs tracking-wider text-muted-foreground hover:text-foreground font-mono"
@@ -780,6 +789,17 @@ export function Index() {
             <Sliders className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">SETTINGS</span>
           </button>
+
+          {/* Direct APK Download Button */}
+          <a
+            href="/edith-x1.apk"
+            download="edith-x1.apk"
+            className="ios-liquid-pill flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-cyan-300 hover:text-white hover:border-cyan-400 transition font-mono shadow-[0_0_12px_rgba(0,229,255,0.25)]"
+            title="Download Official Android APK (16MB)"
+          >
+            <Download className="h-3.5 w-3.5 text-primary animate-pulse" />
+            <span className="hidden md:inline">GET APK</span>
+          </a>
 
           {messages.length > 0 && (
             <button

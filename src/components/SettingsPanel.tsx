@@ -11,6 +11,8 @@ import {
   Mic,
   Activity,
   Radio,
+  Download,
+  Smartphone,
 } from "lucide-react";
 
 type Props = {
@@ -108,6 +110,41 @@ export function SettingsPanel({ settings, onChange, onClose, onPreview }: Props)
             <Check className="h-4 w-4" /> Parameters synchronized.
           </div>
         )}
+
+        {/* Native Android APK Direct Download */}
+        <section className="mb-6">
+          <div className="liquid-glass-card rounded-xl p-4 border border-cyan-400/30 bg-cyan-950/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold tracking-wider text-cyan-300 font-mono">
+                  ANDROID NATIVE PACKAGE
+                </span>
+              </div>
+              <span className="liquid-badge text-[9px] text-green-400">COMPILED APK</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground mb-3 font-mono">
+              Ready-to-install Android installation file (16 MB) featuring the real iOS 27 Liquid Glass HUD, holographic arc reactor, and dual-tier intelligence.
+            </p>
+            <div className="flex items-center gap-2">
+              <a
+                href="/edith-x1.apk"
+                download="edith-x1.apk"
+                className="ios-liquid-btn flex-1 py-2 text-[11px] flex items-center justify-center gap-1.5 font-mono"
+              >
+                <Download className="h-3.5 w-3.5" /> DIRECT DOWNLOAD APK
+              </a>
+              <a
+                href="/downloads/edith-x1.apk"
+                download="edith-x1.apk"
+                className="ios-liquid-pill px-3 py-2 text-[10px] text-muted-foreground hover:text-cyan-300 font-mono"
+                title="Alternative Mirror Download"
+              >
+                MIRROR
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* Microphone Input Threshold & Voice Detection Slider */}
         <section className="mb-8">

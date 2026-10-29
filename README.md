@@ -2,6 +2,8 @@
 ### *"Even Dead, I'm The Hero"*
 
 [![Status](https://img.shields.io/badge/Status-Operational-00e5ff.svg)](https://edithx1.lovable.app)
+[![Download APK](https://img.shields.io/badge/Download-Android%20APK-00e5ff.svg?logo=android&logoColor=white)](/edith-x1.apk)
+[![GitHub Releases](https://img.shields.io/badge/GitHub-Releases%20APK-38bdf8.svg?logo=github)](https://github.com/releases)
 [![UI](https://img.shields.io/badge/UI-iOS%2027%20Liquid%20Glass-00e5ff.svg)](#ios-27-liquid-glass-hud)
 [![AI Engine](https://img.shields.io/badge/AI-Gemini%203.5%20Flash-38bdf8.svg)](https://deepmind.google/technologies/gemini/)
 [![Failover](https://img.shields.io/badge/Failover-Stark%20Cascade%20Pool-10b981.svg)](#multi-tier-gemini-failover-pool)
@@ -10,12 +12,30 @@ E.D.I.T.H. X1 is an augmented tactical AI intelligence console inspired by Tony 
 
 ---
 
+## 📱 Direct Android APK Download & GitHub Releases
+
+You can download and install the official compiled Android package directly onto any Android phone or tablet:
+
+### 1. Direct Web & Browser Download
+- **Primary Direct Link:** [Download `edith-x1.apk` (16 MB)](/edith-x1.apk)
+- **Mirror Download Link:** [Download `/downloads/edith-x1.apk`](/downloads/edith-x1.apk)
+- **In-App Download:** Open E.D.I.T.H. X1 and tap the **APK** pill in the top iOS 27 Liquid Glass dock or in **Settings → Android APK**.
+
+### 2. GitHub Releases Asset
+When viewing the project on GitHub:
+1. Navigate to the **Releases** tab on the right sidebar (or `https://github.com/<owner>/<repo>/releases`).
+2. Under the latest tag (e.g., `v1.0.0`), expand the **Assets** dropdown.
+3. Click **`edith-x1.apk`** to initiate an instant direct download.
+4. On your Android device, tap the downloaded `.apk` file to install. *(If prompted, enable "Install unknown apps" for your browser).*
+
+---
+
 ## ⚡ Core Capabilities
 
 ### 🌌 1. iOS 27 Liquid Glass HUD
 - **Deep Optical Refraction & Dispersion**: Real iOS 27 optical blur (`backdrop-filter: blur(48px) saturate(220%)`), double specular rim lines (`inset 0 1.5px 0 rgba(255, 255, 255, 0.65)`), and chromatic edge sheen.
 - **Stealth Carbon-Fiber Matrix**: Micro-grid tactical HUD backdrop with subtle cyan caustics, azimuth compass ticks, and Stark Sec-9 telemetry brackets.
-- **Floating Liquid Nav Dock**: Continuous glass pill dock housing the official EDITH titanium logo, mode switcher, telemetry status, and parameter settings.
+- **Floating Liquid Nav Dock**: Continuous glass pill dock housing the official EDITH titanium logo, mode switcher, telemetry status, APK download, and parameter settings.
 
 ### ⚛️ 2. Holographic Arc Reactor Core with Soundwave Reticle
 - **Multi-Ring Gyroscopic Conduit**: Dual counter-rotating conduits, 10 radial plasma induction coils, and 360° azimuth degree indicators.
@@ -38,12 +58,17 @@ E.D.I.T.H. X1 is an augmented tactical AI intelligence console inspired by Tony 
 
 ```
 edithx1/
+├── .github/workflows/
+│   └── release-apk.yml           # Automated GitHub Action building & uploading APK to Releases
+├── public/
+│   ├── edith-x1.apk              # 16MB Compiled Android APK for direct browser downloads
+│   └── downloads/edith-x1.apk    # Mirror download endpoint
 ├── src/                          # Web Application (TanStack Start + React 19)
 │   ├── components/
 │   │   ├── ArcReactorCore.tsx    # Holographic Arc Reactor with soundwave reticle
 │   │   ├── EdithLogo.tsx         # Official Titanium EDITH emblem
 │   │   ├── DiagnosticPanel.tsx   # Telemetry & bezier latency chart
-│   │   ├── SettingsPanel.tsx     # Mic threshold slider & key configuration
+│   │   ├── SettingsPanel.tsx     # Mic threshold slider, key pool & APK download
 │   │   └── TaskPanel.tsx         # EDITH Network execution monitor
 │   ├── lib/
 │   │   ├── ai.server.ts          # Gemini 3.5 failover pool & key management

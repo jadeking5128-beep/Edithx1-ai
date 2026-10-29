@@ -1,0 +1,77 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew || true
+
+      - name: Build Debug APK with Gradle
+        run: |
+          if [ -f "gradlew" ]; then
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
+
+      - name: Locate and Prepare APK
+        id: prepare_apk
+        run: |
+          mkdir -p release-artifacts
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk release-artifacts/edith-x1.apk
+          elif [ -f ".build-outputs/app-debug.apk" ]; then
+            cp .build-outputs/app-debug.apk release-artifacts/edith-x1.apk
+          elif [ -f "public/edith-x1.apk" ]; then
+            cp public/edith-x1.apk release-artifacts/edith-x1.apk
+          fi
+          echo "APK prepared at release-artifacts/edith-x1.apk"
+          ls -lh release-artifacts/edith-x1.apk
+
+      - name: Upload APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-artifacts/edith-x1.apk
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ### E.D.I.T.H. X1 Tactical Assistant — Android Release
+            
+            #### 📱 Direct Download:
+            - **`edith-x1.apk`** — Complete Android installation package.
+            
+            #### 🚀 Highlights:
+            - **iOS 27 Real Liquid Glass HUD**: Frosted caustics and double-specular refraction.
+            - **Holographic Arc Reactor Core**: Real-time soundwave reticle and gyroscopic induction coils.
+            - **Official Brushed Titanium Emblem**: Authentic EDITH logo with electric cyan laser blade.
+            - **Dual-Tier AI Engine**: Sub-second Gemini 3.5 Flash failover cascade + offline autonomous Stark core.
+            - **Voice Ingestion & Background Listen**: Sensitivity threshold slider with live calibration meter.
+
+      - name: Archive APK as GitHub Action Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edith-x1-android-apk
+          path: release-artifacts/edith-x1.apk
+          retention-days: 30
