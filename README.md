@@ -5,7 +5,6 @@
 [![UI](https://img.shields.io/badge/UI-iOS%2027%20Liquid%20Glass-00e5ff.svg)](#ios-27-liquid-glass-hud)
 [![AI Engine](https://img.shields.io/badge/AI-Gemini%203.5%20Flash-38bdf8.svg)](https://deepmind.google/technologies/gemini/)
 [![Failover](https://img.shields.io/badge/Failover-Stark%20Cascade%20Pool-10b981.svg)](#multi-tier-gemini-failover-pool)
-[![Built with Lovable](https://img.shields.io/badge/Lovable-Connected-f43f5e.svg)](https://lovable.dev)
 
 E.D.I.T.H. X1 is an augmented tactical AI intelligence console inspired by Tony Stark's orbital defense glasses and Peter Parker's neural tactical interface. Engineered with an authentic **iOS 27 Liquid Glass HUD**, the official **Brushed Titanium EDITH Emblem**, a **Holographic Arc Reactor Core with dynamic Soundwave Reticle**, an automated **Gemini 3.5 Flash cascade pool**, and an autonomous **Stark Tactical Fallback Engine**.
 
